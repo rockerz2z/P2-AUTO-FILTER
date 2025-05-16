@@ -1,18 +1,29 @@
 class script(object):
 
-    START_TXT = """<b>ʜᴇʏ {}, <i>{}</i>
-    
-ɪ ᴀᴍ ᴘᴏᴡᴇʀғᴜʟ ᴀᴜᴛᴏ ғɪʟᴛᴇʀ ᴡɪᴛʜ ʟɪɴᴋ sʜᴏʀᴛᴇɴᴇʀ ʙᴏᴛ. ʏᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴀꜱ ᴀᴜᴛᴏ ғɪʟᴛᴇʀ ᴡɪᴛʜ ʟɪɴᴋ sʜᴏʀᴛᴇɴᴇʀ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ... ɪᴛ'ꜱ ᴇᴀꜱʏ ᴛᴏ ᴜꜱᴇ ᴊᴜsᴛ ᴀᴅᴅ ᴍᴇ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ ɪ ᴡɪʟʟ ᴘʀᴏᴠɪᴅᴇ ᴛʜᴇʀᴇ ᴍᴏᴠɪᴇꜱ ᴡɪᴛʜ ʏᴏᴜʀ ʟɪɴᴋ ꜱʜᴏʀᴛᴇɴᴇʀ... ❤️</b>"""
+    START_TXT = """<b>ʜᴇʏ {},
 
+ɪ ᴀᴍ ᴛʜᴇ ᴍᴏꜱᴛ ᴘᴏᴡᴇʀꜰᴜʟ ᴀᴜᴛᴏ ꜰɪʟᴛᴇʀ ʙᴏᴛ ᴡɪᴛʜ ᴘʀᴇᴍɪᴜᴍ ꜰᴇᴀᴛᴜʀᴇꜱ, ᴊᴜsᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ
+
+<blockquote>‣ ᴍᴀɪɴᴛᴀɪɴᴇᴅ ʙʏ : <a href='https://telegram.me/Rockerz2z'>Rockerz2z</a></blockquote></b>
+"""
     MY_ABOUT_TXT = """ <blockquote><b> » Mʏ ɴᴀᴍᴇ : 
-» Dᴇᴠᴇʟᴏᴩᴇʀ : <a href='https://t.me/Mobarak46'>Mᴜʙɪ</a>
+» Dᴇᴠᴇʟᴏᴩᴇʀ : <a href='https://t.me/Rockerz2z'>R2K Kingdom</a>
 » Lɪʙʀᴀʀʏ : Pʏʀᴏɢʀᴀᴍ
 » Lᴀɴɢᴜᴀɢᴇ : Pʏᴛʜᴏɴ
 » Dᴀᴛᴀ ʙᴀsᴇ : Mᴏɴɢᴏ ᴅʙ
 » Hᴏsᴛᴇᴅ ᴏɴ  : Kᴏʏᴇʙ
 » Mʏ Vᴇʀꜱɪᴏɴ : ᴠ5.2 [sᴛᴀʙʟᴇ]</b></blockquote>"""
 
-    MY_OWNER_TXT = """ its personal Not able to share in public """
+    MY_OWNER_TXT = """<b><blockquote>⍟───[ My Details ]───⍟</blockquote>
+    
+‣ My name: <a href=https://t.me/{}>{}</a>
+‣ My best friend: <a href='tg://settings'>This person</a> 
+‣ Developer: <a href='https://t.me/Rockerzyy_bot'>Professor R2k</a> 
+‣ Library: <a href='https://docs.pyrogram.org/'>Pyrogram</a> 
+‣ Language: <a href='https://www.python.org/download/releases/3.0/'>Python 3</a> 
+‣ Database: <a href='https://www.mongodb.com/'>Mongo DB</a> 
+‣ Bot Server: <a href='https://heroku.com'>Heroku</a> 
+‣ Build Status: v2.7.1 [BETA]</b>"""
 
     STATUS_TXT = """<b> » Tᴏᴛᴀʟ ᴜꜱᴇʀꜱ: <code>{}</code>
 » Pʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ: <code>{}</code>
@@ -32,12 +43,12 @@ Tɪᴛʟᴇ - {}
 ɪᴅ - <code>{}</code>
 ᴜꜱᴇʀɴᴀᴍᴇ - {}
 ᴛᴏᴛᴀʟ - <code>{}</code>
-Bᴏᴛ ɴᴀᴍᴇ:- @Rockerz2kBot"""
+Bᴏᴛ ɴᴀᴍᴇ:- @RequestMovie_bot"""
 
     NEW_USER_TXT = """#NewUser
 Nᴀᴍᴇ:- {}
 ɪᴅ: <code>{}</code>
-Bᴏᴛ ɴᴀᴍᴇ:- @Rockerz2kBot"""
+Bᴏᴛ ɴᴀᴍᴇ:- @RequestMovie_bot"""
 
     NOT_FILE_TXT = """👋 Hello {},
 
@@ -53,7 +64,7 @@ I can't find the <b>{}</b> in my database! 🥲
 
 » sᴛᴇᴘ 1:- ғɪʀsᴛ ʏᴏᴜ ʜᴀᴠᴇ ᴛᴏ ᴀᴅᴅ ᴛʜɪs ʙᴏᴛ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴡɪᴛʜ ᴀᴅᴍɪɴ ᴘᴇʀᴍɪssɪᴏɴ.
 
-» sᴛᴇᴘ 2:- ᴍᴀᴋᴇ ᴀᴄᴄᴏᴜɴᴛ ᴏɴ <a href=https://telegram.me/how_to_download_channel/14>mdisklink.link</a> [ ʏᴏᴜ ᴄᴀɴ ᴀʟsᴏ ᴜsᴇ ᴏᴛʜᴇʀ sʜᴏʀᴛɴᴇʀ ᴡᴇʙsɪᴛᴇ ]
+» sᴛᴇᴘ 2:- ᴍᴀᴋᴇ ᴀᴄᴄᴏᴜɴᴛ ᴏɴ <a href=https://linkcents.com/ref/rockerz2ktg>linkcents.com</a> [ ʏᴏᴜ ᴄᴀɴ ᴀʟsᴏ ᴜsᴇ ᴏᴛʜᴇʀ sʜᴏʀᴛɴᴇʀ ᴡᴇʙsɪᴛᴇ ]
 
 » sᴛᴇᴘ 3:- ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴇʟᴏᴡ ɢɪᴠᴇɴ ʙᴜᴛᴛᴏɴ ᴛᴏ ᴋɴᴏᴡ ʜᴏᴡ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ sʜᴏʀᴛɴᴇʀ ᴡɪᴛʜ ᴛʜɪs ʙᴏᴛ.
 
@@ -69,7 +80,7 @@ I can't find the <b>{}</b> in my database! 🥲
 
 ➥ ᴇxᴀᴍᴘʟᴇ ↓↓↓
 
-<code>/set_shortlink mdisklink.link 5843c3cc645f5077b2200a2c77e0344879880b3e</code>
+<code>/set_shortlink linkcents.com 5843c3cc645f5077b2200a2c77e0344879880b3e</code>
 
 ➥ ɪꜰ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴄʜᴇᴄᴋ ᴡʜɪᴄʜ sʜᴏʀᴛᴇɴᴇʀ ʏᴏᴜ ʜᴀᴠᴇ ᴄᴏɴɴᴇᴄᴛᴇᴅ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴛʜᴇɴ sᴇɴᴅ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴛʜᴇ ɢʀᴏᴜᴘ /get_shortlink
 
@@ -87,7 +98,8 @@ I can't find the <b>{}</b> in my database! 🥲
 🗣 Requested by: {message.from_user.mention}
 ©️ Powered by: <b>{message.chat.title}</b>"""
 
-    FILE_CAPTION = """<i>{file_name}</i>"""
+    FILE_CAPTION = """"<b>📂Filename: {file_name}</b>\n
+<b>@Rockerz2z X @Rockerz2z</b>"""
 
     WELCOME_TEXT = """👋 Hello {mention}, Welcome to {title} group! 💞"""
 
@@ -147,7 +159,7 @@ Support:
 
 - ᴛʜɪꜱ ʙᴏᴛ ɪꜱ ᴀɴ ᴏᴘᴇɴ ꜱᴏᴜʀᴄᴇ ᴘʀᴏᴊᴇᴄᴛ.
 
-- ꜱᴏᴜʀᴄᴇ - <a href='https://t.me/Mobarak46'>Mᴜʙɪ</a>
+- ꜱᴏᴜʀᴄᴇ - <a href='https://t.me/Rockerz2z'>R2K Kingdom</a>
 
-- ᴅᴇᴠʟᴏᴘᴇʀ - @Mobarak46</b>"""
+- ᴅᴇᴠʟᴏᴘᴇʀ - @Rockerz2z</b>"""
 
