@@ -87,12 +87,12 @@ SUPPORT_LINK = environ.get('SUPPORT_LINK', 'https://t.me/R2K_Support')
 UPDATES_LINK = environ.get('UPDATES_LINK', 'https://t.me/Rockerz2z')
 #FILMS_LINK = Movie Request Group link
 FILMS_LINK = environ.get('FILMS_LINK', 'https://t.me/+ANbMXPyGtZxmZjg1')
-TUTORIAL = environ.get("TUTORIAL", "https://t.me/Rockerz2z")
-VERIFY_TUTORIAL = environ.get("VERIFY_TUTORIAL", "https://t.me/Rockerz2z")
+TUTORIAL = environ.get("TUTORIAL", "https://t.me/HOWTODOWNLOAD25")
+VERIFY_TUTORIAL = environ.get("VERIFY_TUTORIAL", "https://t.me/HOWTODOWNLOAD25")
 
 # Bot settings
 DELETE_TIME = int(environ.get('DELETE_TIME', 3600)) # Add time in seconds
-CACHE_TIME = int(environ.get('CACHE_TIME', 300))
+CACHE_TIME = int(environ.get('CACHE_TIME', 1800))
 MAX_BTN = int(environ.get('MAX_BTN', 8))
 LANGUAGES = [language.lower() for language in environ.get('LANGUAGES', 'hindi english telugu tamil kannada malayalam marathi punjabi').split()]
 QUALITY = [quality.lower() for quality in environ.get('QUALITY', '360p 480p 720p 1080p 2160p').split()]
@@ -106,7 +106,7 @@ INDEX_EXTENSIONS = [extensions.lower() for extensions in environ.get('INDEX_EXTE
 PM_FILE_DELETE_TIME = int(environ.get('PM_FILE_DELETE_TIME', '3600'))
 
 # boolean settings
-USE_CAPTION_FILTER = is_enabled('USE_CAPTION_FILTER', False)
+USE_CAPTION_FILTER = is_enabled('USE_CAPTION_FILTER', True)
 IS_VERIFY = is_enabled('IS_VERIFY', False)
 AUTO_DELETE = is_enabled('AUTO_DELETE', True)
 WELCOME = is_enabled('WELCOME', False)
@@ -127,7 +127,7 @@ if len(BIN_CHANNEL) == 0:
     exit()
 else:
     BIN_CHANNEL = int(BIN_CHANNEL)
-URL = environ.get("URL", "https://t.me/Rockerz2z")
+URL = environ.get("URL", "https://mathematical-regine-r2k-0df02f40.koyeb.app/")
 if len(URL) == 0:
     logger.error('URL is missing, exiting now')
     exit()
