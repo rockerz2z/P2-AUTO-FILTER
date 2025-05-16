@@ -2,39 +2,42 @@ class script(object):
 
     START_TXT = """<b>ʜᴇʏ {}, <i>{}</i>
     
-ɪ ᴀᴍ ᴘᴏᴡᴇʀғᴜʟ ᴀᴜᴛᴏ ғɪʟᴛᴇʀ ᴡɪᴛʜ ʟɪɴᴋ sʜᴏʀᴛᴇɴᴇʀ ʙᴏᴛ. ʏᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴀꜱ ᴀᴜᴛᴏ ғɪʟᴛᴇʀ ᴡɪᴛʜ ʟɪɴᴋ sʜᴏʀᴛᴇɴᴇʀ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ... ɪᴛ'ꜱ ᴇᴀꜱʏ ᴛᴏ ᴜꜱᴇ ᴊᴜsᴛ ᴀᴅᴅ ᴍᴇ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ ɪ ᴡɪʟʟ ᴘʀᴏᴠɪᴅᴇ ᴛʜᴇʀᴇ ᴍᴏᴠɪᴇꜱ ᴡɪᴛʜ ʏᴏᴜʀ ʟɪɴᴋ ꜱʜᴏʀᴛᴇɴᴇʀ... ♻️</b>"""
+ɪ ᴀᴍ ᴘᴏᴡᴇʀғᴜʟ ᴀᴜᴛᴏ ғɪʟᴛᴇʀ ᴡɪᴛʜ ʟɪɴᴋ sʜᴏʀᴛᴇɴᴇʀ ʙᴏᴛ. ʏᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴀꜱ ᴀᴜᴛᴏ ғɪʟᴛᴇʀ ᴡɪᴛʜ ʟɪɴᴋ sʜᴏʀᴛᴇɴᴇʀ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ... ɪᴛ'ꜱ ᴇᴀꜱʏ ᴛᴏ ᴜꜱᴇ ᴊᴜsᴛ ᴀᴅᴅ ᴍᴇ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ ɪ ᴡɪʟʟ ᴘʀᴏᴠɪᴅᴇ ᴛʜᴇʀᴇ ᴍᴏᴠɪᴇꜱ ᴡɪᴛʜ ʏᴏᴜʀ ʟɪɴᴋ ꜱʜᴏʀᴛᴇɴᴇʀ... ❤️</b>"""
 
-    MY_ABOUT_TXT = """★ Server: <a href=https://www.heroku.com>Heroku</a>
-★ Database: <a href=https://www.mongodb.com>MongoDB</a>
-★ Language: <a href=https://www.python.org>Python</a>
-★ Library: <a href=https://t.me/HydrogramNews>Hydrogram</a>"""
+    MY_ABOUT_TXT = """ <blockquote><b> » Mʏ ɴᴀᴍᴇ : 
+» Dᴇᴠᴇʟᴏᴩᴇʀ : <a href='https://t.me/Mobarak46'>Mᴜʙɪ</a>
+» Lɪʙʀᴀʀʏ : Pʏʀᴏɢʀᴀᴍ
+» Lᴀɴɢᴜᴀɢᴇ : Pʏᴛʜᴏɴ
+» Dᴀᴛᴀ ʙᴀsᴇ : Mᴏɴɢᴏ ᴅʙ
+» Hᴏsᴛᴇᴅ ᴏɴ  : Kᴏʏᴇʙ
+» Mʏ Vᴇʀꜱɪᴏɴ : ᴠ5.2 [sᴛᴀʙʟᴇ]</b></blockquote>"""
 
-    MY_OWNER_TXT = """★ Name: HA Bots
-★ Username: @HA_Bots
-★ Country: Sri Lanka 🇱🇰"""
+    MY_OWNER_TXT = """ its personal Not able to share in public """
 
-    STATUS_TXT = """👤 Total Users: <code>{}</code>
-😎 Premium Users: <code>{}</code>
-👥 Total Chats: <code>{}</code>
-🗳 Data database used: <code>{}</code>
+    STATUS_TXT = """<b> » Tᴏᴛᴀʟ ᴜꜱᴇʀꜱ: <code>{}</code>
+» Pʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ: <code>{}</code>
+» Tᴏᴛᴀʟ ᴄʜᴀᴛꜱ: <code>{}</code>
+» Usᴇᴅ sᴛᴏʀᴀɢᴇ : <code>{}</code>
 
-🗂 1st database Files: <code>{}</code>
-🗳 1st files database used: <code>{}</code>
+» 𝟷ꜱᴛ Dᴀᴛᴀʙᴀꜱᴇ ғɪʟᴇꜱ: <code>{}</code>
+» 𝟸ɴᴅ Usᴇᴅ sᴛᴏʀᴀɢᴇ: <code>{}</code>
 
-🗂 2nd database Files: <code>{}</code>
-🗳 2nd files database used: <code>{}</code>
+» 𝟸ɴᴅ Dᴀᴛᴀʙᴀꜱᴇ ғɪʟᴇꜱ: <code>{}</code>
+» 𝟸ɴᴅ Dᴀᴛᴀʙᴀꜱᴇ ᴜꜱᴇᴅ: <code>{}</code>
 
-🚀 Bot Uptime: <code>{}</code>"""
+🚀 Bᴏᴛ ᴜᴘᴛɪᴍᴇ: <code>{}</code> </b>"""
 
     NEW_GROUP_TXT = """#NewGroup
-Title - {}
-ID - <code>{}</code>
-Username - {}
-Total - <code>{}</code>"""
+Tɪᴛʟᴇ - {}
+ɪᴅ - <code>{}</code>
+ᴜꜱᴇʀɴᴀᴍᴇ - {}
+ᴛᴏᴛᴀʟ - <code>{}</code>
+Bᴏᴛ ɴᴀᴍᴇ:- @Rockerz2kBot"""
 
     NEW_USER_TXT = """#NewUser
-★ Name: {}
-★ ID: <code>{}</code>"""
+Nᴀᴍᴇ:- {}
+ɪᴅ: <code>{}</code>
+Bᴏᴛ ɴᴀᴍᴇ:- @Rockerz2kBot"""
 
     NOT_FILE_TXT = """👋 Hello {},
 
@@ -84,13 +87,11 @@ I can't find the <b>{}</b> in my database! 🥲
 🗣 Requested by: {message.from_user.mention}
 ©️ Powered by: <b>{message.chat.title}</b>"""
 
-    FILE_CAPTION = """<i>{file_name}</i>
-
-🚫 ᴘʟᴇᴀsᴇ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ᴄʟᴏsᴇ ʙᴜᴛᴛᴏɴ ɪꜰ ʏᴏᴜ ʜᴀᴠᴇ sᴇᴇɴ ᴛʜᴇ ᴍᴏᴠɪᴇ 🚫"""
+    FILE_CAPTION = """<i>{file_name}</i>"""
 
     WELCOME_TEXT = """👋 Hello {mention}, Welcome to {title} group! 💞"""
 
-    HELP_TXT = """<b>Note - <spoiler>Try each command without any argument to see more details 😹</spoiler></b>"""
+    HELP_TXT = """<b>Note - <blockquote>Try each command without any argument to see more details 😹</blockquote></b>"""
     
     ADMIN_COMMAND_TXT = """<b>Here is bot admin commands 👇
 
@@ -130,7 +131,7 @@ Admins support
 And more...
 
 Support:
-@Hansaka_Anuhas"""
+@Rockerz2z"""
 
     USER_COMMAND_TXT = """<b>Here is bot user commands 👇
 
@@ -146,7 +147,7 @@ Support:
 
 - ᴛʜɪꜱ ʙᴏᴛ ɪꜱ ᴀɴ ᴏᴘᴇɴ ꜱᴏᴜʀᴄᴇ ᴘʀᴏᴊᴇᴄᴛ.
 
-- ꜱᴏᴜʀᴄᴇ - <a href=https://github.com/HA-Bots/Auto-Filter-Bot>ʜᴇʀᴇ</a>
+- ꜱᴏᴜʀᴄᴇ - <a href='https://t.me/Mobarak46'>Mᴜʙɪ</a>
 
-- ᴅᴇᴠʟᴏᴘᴇʀ - @HA_Bots"""
+- ᴅᴇᴠʟᴏᴘᴇʀ - @Mobarak46</b>"""
 
