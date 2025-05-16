@@ -41,7 +41,7 @@ PORT = int(environ.get('PORT', '80'))
 PICS = (environ.get('PICS', 'https://te.legra.ph/file/00c2b881ab6dd8680b232.jpg')).split()
 
 # Bot Admins
-ADMINS = environ.get('ADMINS', '1078638766 6221939103')
+ADMINS = environ.get('ADMINS', '1078638766 6221939103 1491400016')
 if len(ADMINS) == 0:
     logger.error('ADMINS is missing, exiting now')
     exit()
@@ -79,13 +79,14 @@ if len(FILES_DATABASE_URL) == 0:
 SECOND_FILES_DATABASE_URL = environ.get('SECOND_FILES_DATABASE_URL', "mongodb+srv://riyazahamed1806:Riyazkk2003@cluster0.v0ovwye.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 if len(SECOND_FILES_DATABASE_URL) == 0:
     logger.info('SECOND_FILES_DATABASE_URL is empty')
-DATABASE_NAME = environ.get('DATABASE_NAME', "Cluster0")
+DATABASE_NAME = environ.get('DATABASE_NAME', "Riyaz18")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Files')
 
 # Links
 SUPPORT_LINK = environ.get('SUPPORT_LINK', 'https://t.me/R2K_Support')
 UPDATES_LINK = environ.get('UPDATES_LINK', 'https://t.me/Rockerz2z')
-FILMS_LINK = environ.get('FILMS_LINK', 'https://t.me/Rockerz2z')
+#FILMS_LINK = Movie Request Group link
+FILMS_LINK = environ.get('FILMS_LINK', 'https://t.me/+pshatdpM9FVkM2M1')
 TUTORIAL = environ.get("TUTORIAL", "https://t.me/Rockerz2z")
 VERIFY_TUTORIAL = environ.get("VERIFY_TUTORIAL", "https://t.me/Rockerz2z")
 
@@ -142,7 +143,7 @@ else:
 
 #start command reactions and sticker
 REACTIONS = [reactions for reactions in environ.get('REACTIONS', '🤝 😇 🤗 😍 👍 🎅 😐 🥰 🤩 😱 🤣 😘 👏 😛 😈 🎉 ⚡️ 🫡 🤓 😎 🏆 🔥 🤭 🌚 🆒 👻 😁').split()]  # Multiple reactions can be used separated by space
-STICKERS = [sticker for sticker in environ.get('STICKERS', 'CAACAgUAAxkBAAELTeJoJHtQsLxJJfkT4JakLxbUjcKz8wACjwIAAsnn6FVsAf5eBhi7Sh4E CAACAgUAAxkBAAELTeJoJHtQsLxJJfkT4JakLxbUjcKz8wACjwIAAsnn6FVsAf5eBhi7Sh4E').split()]  # Multiple sticker can be used separated by space, use @idstickerbot for get sticker id
+STICKERS = [sticker for sticker in environ.get('STICKERS', 'CAACAgUAAxkBAAELTeJoJHtQsLxJJfkT4JakLxbUjcKz8wACjwIAAsnn6FVsAf5eBhi7Sh4E').split()]  # Multiple sticker can be used separated by space, use @idstickerbot for get sticker id
 
 
 # for Premium 
