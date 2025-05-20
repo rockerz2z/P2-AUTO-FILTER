@@ -2,12 +2,12 @@ import asyncio
 import re
 from time import time as time_now
 import math, os
-import qrcode
+import qrcode, random
 from hydrogram.errors import ListenerTimeout
 from hydrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
 from Script import script
 from datetime import datetime, timedelta
-from info import PM_SEARCH, TUTORIAL, SHORTLINK_API, SHORTLINK_URL, RECEIPT_SEND_USERNAME, UPI_ID, UPI_NAME, PRE_DAY_AMOUNT, SECOND_FILES_DATABASE_URL, ADMINS, URL, MAX_BTN, BIN_CHANNEL, IS_STREAM, DELETE_TIME, FILMS_LINK, LOG_CHANNEL, SUPPORT_GROUP, SUPPORT_LINK, UPDATES_LINK, LANGUAGES, QUALITY
+from info import IS_PREMIUM, PICS, PM_SEARCH, TUTORIAL, SHORTLINK_API, SHORTLINK_URL, RECEIPT_SEND_USERNAME, UPI_ID, UPI_NAME, PRE_DAY_AMOUNT, SECOND_FILES_DATABASE_URL, ADMINS, URL, MAX_BTN, BIN_CHANNEL, IS_STREAM, DELETE_TIME, FILMS_LINK, LOG_CHANNEL, SUPPORT_GROUP, SUPPORT_LINK, UPDATES_LINK, LANGUAGES, QUALITY
 from hydrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from hydrogram import Client, filters, enums
 from utils import is_premium, get_size, is_subscribed, is_check_admin, get_wish, get_shortlink, get_readable_time, get_poster, temp, get_settings, save_group_settings
@@ -555,25 +555,31 @@ async def cb_handler(client: Client, query: CallbackQuery):
         await query.answer("Movie request format.\nExample:\nBlack Adam or Black Adam 2022\n\nTV Reries request format.\nExample:\nLoki S01E01 or Loki S01 E01\n\nDon't use symbols.", show_alert=True)
 
     elif query.data == 'activate_trial':
+        btn = [[
+            InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='premium')
+        ]]
         mp = db.get_plan(query.from_user.id)
         if mp['trial']:
-            return await query.message.edit('You already used trial, use /plan to activate plan')
+            return await query.message.edit('You already used trial, use /plan to activate plan', reply_markup=InlineKeyboardMarkup(btn))
         ex = datetime.now() + timedelta(hours=1)
         mp['expire'] = ex
         mp['trial'] = True
         mp['plan'] = '1 hour'
         mp['premium'] = True
         db.update_plan(query.from_user.id, mp)
-        await query.message.edit(f"Congratulations! Your activated trial for 1 hour\nExpire: {ex.strftime('%Y.%m.%d %H:%M:%S')}")
+        await query.message.edit(f"Congratulations! Your activated trial for 1 hour\nExpire: {ex.strftime('%Y.%m.%d %H:%M:%S')}", reply_markup=InlineKeyboardMarkup(btn))
 
     elif query.data == 'activate_plan':
+        btn = [[
+            InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='premium')
+        ]]
         q = await query.message.edit('How many days you need premium plan?\nSend days as number')
         msg = await client.listen(chat_id=query.message.chat.id, user_id=query.from_user.id)
         try:
             d = int(msg.text)
         except:
             await q.delete()
-            return await query.message.reply('Invalid number\nIf you want 7 days then send 7 only')
+            return await query.message.reply('Invalid number\nIf you want 7 days then send 7 only', reply_markup=InlineKeyboardMarkup(btn))
         transaction_note = f'{d} days premium plan for {query.from_user.id}'
         amount = d * PRE_DAY_AMOUNT
         upi_uri = f"upi://pay?pa={UPI_ID}&pn={UPI_NAME}&am={amount}&cu=INR&tn={transaction_note}"
@@ -587,14 +593,14 @@ async def cb_handler(client: Client, query: CallbackQuery):
             msg = await client.listen(chat_id=query.message.chat.id, user_id=query.from_user.id, timeout=600)
         except ListenerTimeout:
             await q.delete()
-            return await query.message.reply(f'Your time is over, send your receipt to: {RECEIPT_SEND_USERNAME}')
+            return await query.message.reply(f'Your time is over, send your receipt to: {RECEIPT_SEND_USERNAME}', reply_markup=InlineKeyboardMarkup(btn))
         if msg.photo:
             await q.delete()
-            await query.message.reply(f'Your receipt was sent, wait some time\nSupport: {RECEIPT_SEND_USERNAME}')
+            await query.message.reply(f'Your receipt was sent, wait some time\nSupport: {RECEIPT_SEND_USERNAME}', reply_markup=InlineKeyboardMarkup(btn))
             await client.send_photo(RECEIPT_SEND_USERNAME, msg.photo.file_id, transaction_note)
         else:
             await q.delete()
-            await query.message.reply(f"Not valid photo, send your receipt to: {RECEIPT_SEND_USERNAME}")
+            await query.message.reply(f"Not valid photo, send your receipt to: {RECEIPT_SEND_USERNAME}", reply_markup=InlineKeyboardMarkup(btn))
 
 
 
@@ -609,13 +615,12 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('🔎 ɪɴʟɪɴᴇ', switch_inline_query_current_chat=''),
             InlineKeyboardButton('📚 ᴀʙᴏᴜᴛ', callback_data='about')
         ],[
-            InlineKeyboardButton('🤑 Buy Premium', url=f"https://t.me/{temp.U_NAME}?start=premium")
+            InlineKeyboardButton('🤑 Buy Premium', callback_data='premium')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.START_TXT.format(query.from_user.mention, get_wish()),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.START_TXT.format(query.from_user.mention, get_wish())),
+            reply_markup=reply_markup
         )
         
     elif query.data == "about":
@@ -628,10 +633,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='start')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.MY_ABOUT_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.MY_ABOUT_TXT),
+            reply_markup=reply_markup
         )
 
     elif query.data == "stats":
@@ -654,16 +658,30 @@ async def cb_handler(client: Client, query: CallbackQuery):
         buttons = [[
             InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='about')
         ]]
-        await query.message.edit_text(script.STATUS_TXT.format(users, prm, chats, used_data_db_size, files, used_files_db_size, secnd_files, secnd_files_db_used_size, uptime), reply_markup=InlineKeyboardMarkup(buttons)
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.STATUS_TXT.format(users, prm, chats, used_data_db_size, files, used_files_db_size, secnd_files, secnd_files_db_used_size, uptime)),
+            reply_markup=InlineKeyboardMarkup(buttons)
         )
-        
+    
+    elif query.data == 'premium':
+        if not IS_PREMIUM:
+            return await query.answer('Premium feature was disabled by admin', show_alert=True)
+        btn = [[
+            InlineKeyboardButton('Activate Trial', callback_data='activate_trial'),
+            InlineKeyboardButton('Activate Plan', callback_data='activate_plan')
+        ],[
+            InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='start')
+                ]]
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.PLAN_TXT.format(PRE_DAY_AMOUNT, RECEIPT_SEND_USERNAME)),
+            reply_markup=InlineKeyboardMarkup(btn))
+
     elif query.data == "owner":
         buttons = [[InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='about')]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.MY_OWNER_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.MY_OWNER_TXT),
+            reply_markup=reply_markup
         )
         
     elif query.data == "help":
@@ -674,8 +692,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='start')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.HELP_TXT,
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.HELP_TXT.format(query.from_user.mention)),
             reply_markup=reply_markup
         )
 
@@ -684,8 +702,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='help')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.USER_COMMAND_TXT,
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.USER_COMMAND_TXT),
             reply_markup=reply_markup
         )
         
@@ -696,8 +714,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('« ʙᴀᴄᴋ', callback_data='help')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.ADMIN_COMMAND_TXT,
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.ADMIN_COMMAND_TXT),
             reply_markup=reply_markup
         )
 
@@ -706,10 +724,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('≼ ʙᴀᴄᴋ', callback_data='about')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.SOURCE_TXT,
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
+        await query.edit_message_media(
+            InputMediaPhoto(random.choice(PICS), caption=script.SOURCE_TXT),
+            reply_markup=reply_markup
         )
   
     elif query.data.startswith("bool_setgs"):
@@ -1257,4 +1274,3 @@ async def advantage_spell_chok(message, s):
         await message.delete()
     except:
         pass
-
