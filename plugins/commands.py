@@ -11,7 +11,7 @@ from hydrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from database.ia_filterdb import db_count_documents, second_db_count_documents, get_file_details, delete_files
 from database.users_chats_db import db
 from datetime import datetime, timedelta
-from info import URL, BIN_CHANNEL, SECOND_FILES_DATABASE_URL, STICKERS, INDEX_CHANNELS, ADMINS, IS_VERIFY, VERIFY_TUTORIAL, VERIFY_EXPIRE, SHORTLINK_API, SHORTLINK_URL, DELETE_TIME, SUPPORT_LINK, UPDATES_LINK, LOG_CHANNEL, PICS, IS_STREAM, REACTIONS, PM_FILE_DELETE_TIME
+from info import IS_PREMIUM, PRE_DAY_AMOUNT, RECEIPT_SEND_USERNAME, URL, BIN_CHANNEL, SECOND_FILES_DATABASE_URL, STICKERS, INDEX_CHANNELS, ADMINS, IS_VERIFY, VERIFY_TUTORIAL, VERIFY_EXPIRE, SHORTLINK_API, SHORTLINK_URL, DELETE_TIME, SUPPORT_LINK, UPDATES_LINK, LOG_CHANNEL, PICS, IS_STREAM, REACTIONS, PM_FILE_DELETE_TIME
 from utils import is_premium, upload_image, get_settings, get_size, is_subscribed, is_check_admin, get_shortlink, get_verify_status, update_verify_status, save_group_settings, temp, get_readable_time, get_wish, get_seconds
 
 async def del_stk(s):
@@ -63,7 +63,7 @@ async def start(client, message):
             InlineKeyboardButton('🔎 sᴇᴀʀᴄʜ ɪɴʟɪɴᴇ', switch_inline_query_current_chat=''),
             InlineKeyboardButton('📚 ᴀʙᴏᴜᴛ', callback_data='about')
         ],[
-            InlineKeyboardButton('🤑 Buy Premium', url=f"https://t.me/{temp.U_NAME}?start=premium")
+            InlineKeyboardButton('🤑 Buy Premium', callback_data='premium')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply_photo(
@@ -435,10 +435,13 @@ async def ping(client, message):
 
 @Client.on_message(filters.command('myplan') & filters.private)
 async def myplan(client, message):
+    if not IS_PREMIUM:
+        return await message.reply('Premium feature was disabled by admin')
     mp = db.get_plan(message.from_user.id)
     if not await is_premium(message.from_user.id, client):
         btn = [[
-            InlineKeyboardButton('Activate Trial', callback_data='activate_trial')
+            InlineKeyboardButton('Activate Trial', callback_data='activate_trial'),
+            InlineKeyboardButton('Activate Plan', callback_data='activate_plan')
         ]]
         return await message.reply('You dont have any premium plan, please use /plan to activate plan', reply_markup=InlineKeyboardMarkup(btn))
     await message.reply(f"You activated {mp['plan']} plan\nExpire: {mp['expire'].strftime('%Y.%m.%d %H:%M:%S')}")
@@ -446,16 +449,20 @@ async def myplan(client, message):
 
 @Client.on_message(filters.command('plan') & filters.private)
 async def plan(client, message):
+    if not IS_PREMIUM:
+        return await message.reply('Premium feature was disabled by admin')
     btn = [[
         InlineKeyboardButton('Activate Trial', callback_data='activate_trial')
     ],[
         InlineKeyboardButton('Activate Plan', callback_data='activate_plan')
     ]]
-    await message.reply(script.PLAN_TXT, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+    await message.reply(script.PLAN_TXT.format(PRE_DAY_AMOUNT, RECEIPT_SEND_USERNAME), reply_markup=InlineKeyboardMarkup(btn))
 
 
 @Client.on_message(filters.command('add_prm') & filters.user(ADMINS))
 async def add_prm(bot, message):
+    if not IS_PREMIUM:
+        return await message.reply('Premium feature was disabled')
     try:
         _, user_id, d = message.text.split(' ')
     except:
@@ -468,6 +475,8 @@ async def add_prm(bot, message):
         user = await bot.get_users(user_id)
     except Exception as e:
         return await message.reply(f'Error: {e}')
+    if user.id in ADMINS:
+        return await message.reply('ADMINS is already premium')
     if not await is_premium(user.id, bot):
         mp = db.get_plan(user.id)
         ex = datetime.now() + timedelta(days=d)
@@ -487,6 +496,8 @@ async def add_prm(bot, message):
 
 @Client.on_message(filters.command('rm_prm') & filters.user(ADMINS))
 async def rm_prm(bot, message):
+    if not IS_PREMIUM:
+        return await message.reply('Premium feature was disabled')
     try:
         _, user_id = message.text.split(' ')
     except:
@@ -495,6 +506,8 @@ async def rm_prm(bot, message):
         user = await bot.get_users(user_id)
     except Exception as e:
         return await message.reply(f'Error: {e}')
+    if user.id in ADMINS:
+        return await message.reply('ADMINS is already premium')
     if not await is_premium(user.id, bot):
         await message.reply(f"{user.mention} is not premium user")
     else:
@@ -512,6 +525,8 @@ async def rm_prm(bot, message):
 
 @Client.on_message(filters.command('prm_list') & filters.user(ADMINS))
 async def prm_list(bot, message):
+    if not IS_PREMIUM:
+        return await message.reply('Premium feature was disabled')
     tx = await message.reply('Getting list of premium users')
     pr = [i['id'] for i in db.get_premium_users() if i['status']['premium']]
     t = 'premium users saved in database are:\n\n'
@@ -554,4 +569,3 @@ async def set_req_fsub(bot, message):
         return await message.reply(f'ERROR: {e}')
     db.update_bot_sttgs('REQUEST_FORCE_SUB_CHANNELS', id)
     await message.reply(f'added request force subscribe channel: {chat.title}')
-
