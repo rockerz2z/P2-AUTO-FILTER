@@ -1,4 +1,4 @@
-from pyrogram.errors import FloodWait
+from hydrogram.errors import FloodWait
 import os
 import random
 import string
