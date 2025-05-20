@@ -147,13 +147,15 @@ STICKERS = [sticker for sticker in environ.get('STICKERS', 'CAACAgUAAxkBAAELTeJo
 
 
 # for Premium 
+IS_PREMIUM = is_enabled('IS_PREMIUM', True)
 PRE_DAY_AMOUNT = int(environ.get('PRE_DAY_AMOUNT', '10')) # add amount in INR for premium charge pre day 
 UPI_ID = environ.get("UPI_ID", "xyz")
 if len(UPI_ID) == 0:
-    logger.error('UPI_ID is missing, exiting now')
-    exit()
-UPI_NAME = environ.get("UPI_NAME", "xyz") # add your UPI account name
+    logger.info('UPI_ID is empty')
+UPI_NAME = environ.get("UPI_NAME", "Rockerz2z") # add your UPI account name
 if len(UPI_NAME) == 0:
-    logger.error('UPI_NAME is missing, exiting now')
-    exit()
+    logger.info('UPI_NAME is empty')
 RECEIPT_SEND_USERNAME = environ.get("RECEIPT_SEND_USERNAME", "@Rockerzyy_bot")
+if len(UPI_ID) == 0 or len(UPI_NAME) == 0:
+    logger.info('IS_PREMIUM disabled due to empty UPI_ID or UPI_NAME')
+    IS_PREMIUM = False
