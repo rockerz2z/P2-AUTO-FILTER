@@ -1,4 +1,3 @@
-from hydrogram.errors import FloodWait
 import os
 import random
 import string
@@ -41,11 +40,7 @@ async def start(client, message):
     except:
         await message.react(emoji="⚡️", big=True)
 
-    try:
-        d = await client.send_sticker(message.chat.id, random.choice(STICKERS))
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-        d = await client.send_sticker(message.chat.id, random.choice(STICKERS))
+    d = await client.send_sticker(message.chat.id, random.choice(STICKERS))
     asyncio.create_task(del_stk(d))
 
     if not await db.is_user_exist(message.from_user.id):
