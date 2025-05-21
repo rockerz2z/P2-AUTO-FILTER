@@ -35,7 +35,7 @@ BOT_TOKEN = environ.get('BOT_TOKEN', '7597832356:AAGxDZJINiYQIapWBz8nlf7mELaG_si
 if len(BOT_TOKEN) == 0:
     logger.error('BOT_TOKEN is missing, exiting now')
     exit()
-PORT = int(environ.get('PORT', '80'))
+PORT = int(environ.get('PORT', '8080'))
 
 # Upload your images to "postimages.org" and get direct link
 PICS = (environ.get('PICS', 'https://te.legra.ph/file/00c2b881ab6dd8680b232.jpg')).split()
@@ -49,7 +49,7 @@ else:
     ADMINS = [int(admins) for admins in ADMINS.split()]
 
 # Channels
-INDEX_CHANNELS = [int(index_channels) if index_channels.startswith("-") else index_channels for index_channels in environ.get('INDEX_CHANNELS', '-1001660466640 -1001505006734').split()]
+INDEX_CHANNELS = [int(index_channels) if index_channels.startswith("-") else index_channels for index_channels in environ.get('INDEX_CHANNELS', '-1001660466640 -1001505006734 -1001852694684 -1001698270642').split()]
 if len(INDEX_CHANNELS) == 0:
     logger.info('INDEX_CHANNELS is empty')
 LOG_CHANNEL = environ.get('LOG_CHANNEL', '-1002280301241')
