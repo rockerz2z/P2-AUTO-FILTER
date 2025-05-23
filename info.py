@@ -35,7 +35,7 @@ BOT_TOKEN = environ.get('BOT_TOKEN', '7597832356:AAGpQHjrnv27rf9RN-Qk6vB2iF7auX4
 if len(BOT_TOKEN) == 0:
     logger.error('BOT_TOKEN is missing, exiting now')
     exit()
-PORT = int(environ.get('PORT', '8080'))
+PORT = int(environ.get('PORT', '80'))
 
 # Upload your images to "postimages.org" and get direct link
 PICS = (environ.get('PICS', 'https://te.legra.ph/file/00c2b881ab6dd8680b232.jpg')).split()
