@@ -120,7 +120,7 @@ SHORTLINK = is_enabled('SHORTLINK', True)
 PM_SEARCH = is_enabled('PM_SEARCH', True)
 
 # for stream
-IS_STREAM = is_enabled('IS_STREAM', True)
+IS_STREAM = is_enabled('IS_STREAM', False)
 BIN_CHANNEL = environ.get("BIN_CHANNEL", "-1002411870433")
 if len(BIN_CHANNEL) == 0:
     logger.error('BIN_CHANNEL is missing, exiting now')
