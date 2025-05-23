@@ -120,14 +120,14 @@ SHORTLINK = is_enabled('SHORTLINK', True)
 PM_SEARCH = is_enabled('PM_SEARCH', True)
 
 # for stream
-IS_STREAM = is_enabled('IS_STREAM', False)
+IS_STREAM = is_enabled('IS_STREAM', True)
 BIN_CHANNEL = environ.get("BIN_CHANNEL", "-1002411870433")
 if len(BIN_CHANNEL) == 0:
     logger.error('BIN_CHANNEL is missing, exiting now')
     exit()
 else:
     BIN_CHANNEL = int(BIN_CHANNEL)
-URL = environ.get("URL", "https://mathematical-regine-r2k-0df02f40.koyeb.app/")
+URL = environ.get("URL", "https://onlinewatch.koyeb.app/")
 if len(URL) == 0:
     logger.error('URL is missing, exiting now')
     exit()
