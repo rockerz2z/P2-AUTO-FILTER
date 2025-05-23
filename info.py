@@ -92,7 +92,7 @@ VERIFY_TUTORIAL = environ.get("VERIFY_TUTORIAL", "https://t.me/HOWTODOWNLOAD25")
 
 # Bot settings
 DELETE_TIME = int(environ.get('DELETE_TIME', 3600)) # Add time in seconds
-CACHE_TIME = int(environ.get('CACHE_TIME', 1800))
+CACHE_TIME = int(environ.get('CACHE_TIME', 300))
 MAX_BTN = int(environ.get('MAX_BTN', 8))
 LANGUAGES = [language.lower() for language in environ.get('LANGUAGES', 'hindi english telugu tamil kannada malayalam marathi punjabi').split()]
 QUALITY = [quality.lower() for quality in environ.get('QUALITY', '360p 480p 720p 1080p 2160p').split()]
@@ -106,9 +106,9 @@ INDEX_EXTENSIONS = [extensions.lower() for extensions in environ.get('INDEX_EXTE
 PM_FILE_DELETE_TIME = int(environ.get('PM_FILE_DELETE_TIME', '3600'))
 
 # boolean settings
-USE_CAPTION_FILTER = is_enabled('USE_CAPTION_FILTER', True)
+USE_CAPTION_FILTER = is_enabled('USE_CAPTION_FILTER', False)
 IS_VERIFY = is_enabled('IS_VERIFY', False)
-AUTO_DELETE = is_enabled('AUTO_DELETE', True)
+AUTO_DELETE = is_enabled('AUTO_DELETE', False)
 WELCOME = is_enabled('WELCOME', False)
 PROTECT_CONTENT = is_enabled('PROTECT_CONTENT', False)
 LONG_IMDB_DESCRIPTION = is_enabled("LONG_IMDB_DESCRIPTION", False)
@@ -149,13 +149,13 @@ STICKERS = [sticker for sticker in environ.get('STICKERS', 'CAACAgUAAxkBAAELTeJo
 # for Premium 
 IS_PREMIUM = is_enabled('IS_PREMIUM', False)
 PRE_DAY_AMOUNT = int(environ.get('PRE_DAY_AMOUNT', '10')) # add amount in INR for premium charge pre day 
-UPI_ID = environ.get("UPI_ID", "xyz")
+UPI_ID = environ.get("UPI_ID", "")
 if len(UPI_ID) == 0:
     logger.info('UPI_ID is empty')
-UPI_NAME = environ.get("UPI_NAME", "Rockerz2z") # add your UPI account name
+UPI_NAME = environ.get("UPI_NAME", "") # add your UPI account name
 if len(UPI_NAME) == 0:
     logger.info('UPI_NAME is empty')
-RECEIPT_SEND_USERNAME = environ.get("RECEIPT_SEND_USERNAME", "@Rockerzyy_bot")
+RECEIPT_SEND_USERNAME = environ.get("RECEIPT_SEND_USERNAME", "@Hansaka_Anuhas")
 if len(UPI_ID) == 0 or len(UPI_NAME) == 0:
     logger.info('IS_PREMIUM disabled due to empty UPI_ID or UPI_NAME')
     IS_PREMIUM = False
