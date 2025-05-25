@@ -8,8 +8,6 @@ logging.getLogger('pyrogram').setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 import os
-print("LOG_CHANNEL:", os.getenv("LOG_CHANNEL"))
-import os
 import time
 import asyncio
 import uvloop
