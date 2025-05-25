@@ -3,7 +3,7 @@ import re
 from time import time as time_now
 import math, os
 import qrcode, random
-from pyrogram.errors import ListenerTimeout
+import asyncio
 from pyrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
 from Script import script
 from datetime import datetime, timedelta
@@ -591,7 +591,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         os.remove(p)
         try:
             msg = await client.listen(chat_id=query.message.chat.id, user_id=query.from_user.id, timeout=600)
-        except ListenerTimeout:
+        except asyncio.TimeoutError:
             await q.delete()
             return await query.message.reply(f'Your time is over, send your receipt to: {RECEIPT_SEND_USERNAME}', reply_markup=InlineKeyboardMarkup(btn))
         if msg.photo:
