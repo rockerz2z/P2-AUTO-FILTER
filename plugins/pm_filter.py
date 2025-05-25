@@ -3,7 +3,7 @@ import re
 from time import time as time_now
 import math, os
 import qrcode, random
-import asyncio
+from pyrogram.errors import ListenerTimeout
 from pyrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
 from Script import script
 from datetime import datetime, timedelta
@@ -46,17 +46,10 @@ async def group_search(client, message):
     chat_id = message.chat.id
     settings = await get_settings(chat_id)
     user_id = message.from_user.id if message and message.from_user else 0
-
     if settings["auto_filter"]:
-        # 🚫 Strict link and username filter
-        if re.search(r'(?im)(?:https?://|www\.|t\.me/|telegram\.dog/)\S+|@[a-z0-9_]{5,32}\b', message.text):
-            await message.delete()
-            return
-
         if not user_id:
             await message.reply("I'm not working for anonymous admin!")
             return
-
         if message.chat.id == SUPPORT_GROUP:
             files, offset, total = await get_search_results(message.text)
             if files:
@@ -65,10 +58,10 @@ async def group_search(client, message):
                 ]]
                 await message.reply_text(f'Total {total} results found in this group', reply_markup=InlineKeyboardMarkup(btn))
             return
-
+            
         if message.text.startswith("/"):
             return
-
+            
         elif '@admin' in message.text.lower() or '@admins' in message.text.lower():
             if await is_check_admin(client, message.chat.id, message.from_user.id):
                 return
@@ -80,17 +73,13 @@ async def group_search(client, message):
                         if message.reply_to_message:
                             try:
                                 sent_msg = await message.reply_to_message.forward(member.user.id)
-                                await sent_msg.reply_text(
-                                    f"#Attention\n★ User: {message.from_user.mention}\n★ Group: {message.chat.title}\n\n"
-                                    f"★ <a href={message.reply_to_message.link}>Go to message</a>", disable_web_page_preview=True)
+                                await sent_msg.reply_text(f"#Attention\n★ User: {message.from_user.mention}\n★ Group: {message.chat.title}\n\n★ <a href={message.reply_to_message.link}>Go to message</a>", disable_web_page_preview=True)
                             except:
                                 pass
                         else:
                             try:
                                 sent_msg = await message.forward(member.user.id)
-                                await sent_msg.reply_text(
-                                    f"#Attention\n★ User: {message.from_user.mention}\n★ Group: {message.chat.title}\n\n"
-                                    f"★ <a href={message.link}>Go to message</a>", disable_web_page_preview=True)
+                                await sent_msg.reply_text(f"#Attention\n★ User: {message.from_user.mention}\n★ Group: {message.chat.title}\n\n★ <a href={message.link}>Go to message</a>", disable_web_page_preview=True)
                             except:
                                 pass
             hidden_mentions = (f'[\u2064](tg://user?id={user_id})' for user_id in admins)
@@ -102,16 +91,13 @@ async def group_search(client, message):
                 return
             await message.delete()
             return await message.reply('Links not allowed here!')
-
+        
         elif '#request' in message.text.lower():
             if message.from_user.id in ADMINS:
                 return
-            await client.send_message(LOG_CHANNEL,
-                f"#Request\n★ User: {message.from_user.mention}\n★ Group: {message.chat.title}\n\n"
-                f"★ Message: {re.sub(r'#request', '', message.text.lower())}")
+            await client.send_message(LOG_CHANNEL, f"#Request\n★ User: {message.from_user.mention}\n★ Group: {message.chat.title}\n\n★ Message: {re.sub(r'#request', '', message.text.lower())}")
             await message.reply_text("Request sent!")
-            return
-
+            return  
         else:
             s = await message.reply(f"<b><i>⚠️ `{message.text}` searching...</i></b>")
             await auto_filter(client, message, s)
@@ -123,6 +109,7 @@ async def group_search(client, message):
             await message.delete()
         except:
             pass
+
 @Client.on_callback_query(filters.regex(r"^next"))
 async def next_page(bot, query):
     ident, req, key, offset = query.data.split("_")
@@ -604,7 +591,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         os.remove(p)
         try:
             msg = await client.listen(chat_id=query.message.chat.id, user_id=query.from_user.id, timeout=600)
-        except asyncio.TimeoutError:
+        except ListenerTimeout:
             await q.delete()
             return await query.message.reply(f'Your time is over, send your receipt to: {RECEIPT_SEND_USERNAME}', reply_markup=InlineKeyboardMarkup(btn))
         if msg.photo:
