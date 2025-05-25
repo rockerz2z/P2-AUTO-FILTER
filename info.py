@@ -41,7 +41,7 @@ PORT = int(environ.get('PORT', '8080'))
 PICS = (environ.get('PICS', 'https://te.legra.ph/file/00c2b881ab6dd8680b232.jpg')).split()
 
 # Bot Admins
-ADMINS = environ.get('ADMINS', '1078638766 6221939103 1491400016')
+ADMINS = environ.get('ADMINS', '1078638766 6221939103')
 if len(ADMINS) == 0:
     logger.error('ADMINS is missing, exiting now')
     exit()
@@ -147,12 +147,12 @@ STICKERS = [sticker for sticker in environ.get('STICKERS', 'CAACAgUAAxkBAAELTeJo
 
 
 # for Premium 
-IS_PREMIUM = is_enabled('IS_PREMIUM', False)
+IS_PREMIUM = is_enabled('IS_PREMIUM', True)
 PRE_DAY_AMOUNT = int(environ.get('PRE_DAY_AMOUNT', '10')) # add amount in INR for premium charge pre day 
-UPI_ID = environ.get("UPI_ID", "")
+UPI_ID = environ.get("UPI_ID", "xyz")
 if len(UPI_ID) == 0:
     logger.info('UPI_ID is empty')
-UPI_NAME = environ.get("UPI_NAME", "") # add your UPI account name
+UPI_NAME = environ.get("UPI_NAME", "zyz") # add your UPI account name
 if len(UPI_NAME) == 0:
     logger.info('UPI_NAME is empty')
 RECEIPT_SEND_USERNAME = environ.get("RECEIPT_SEND_USERNAME", "@Hansaka_Anuhas")
