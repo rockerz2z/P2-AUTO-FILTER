@@ -1,4 +1,4 @@
-hydrogram
+pyrogram>=2.0
 tgcrypto
 pymongo
 cinemagoer
