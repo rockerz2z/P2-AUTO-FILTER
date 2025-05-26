@@ -1,8 +1,7 @@
 from info import BIN_CHANNEL, URL
 from utils import temp
-from web.utils.custom_dl import TGCustomYield
 import urllib.parse
-import aiofiles, html
+import html # aiofiles was imported but not used, so removed it.
 
 
 # styles from deepseek.com
@@ -30,164 +29,89 @@ watch_tmplt = """
         }
         
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
         
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
-            min-height: 100vh;
+            line-height: 1.6;
             display: flex;
             flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
         }
         
         header {
-            padding: 1rem;
-            background-color: var(--player-bg);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        #file-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 80%;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px 0;
             text-align: center;
         }
         
-        .container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-            width: 100%;
+        h1 {
+            color: var(--primary);
+            font-size: 2em;
+            margin-bottom: 20px;
         }
         
         .player-container {
-            width: 100%;
-            max-width: 1200px;
+            width: 90%;
+            max-width: 800px;
             background-color: var(--player-bg);
-            border-radius: 0.5rem;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
         }
         
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
-            padding: 0 1rem;
-        }
-        
-        .action-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.25rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            transition: background-color 0.2s;
-        }
-        
-        .action-btn:hover {
-            background-color: var(--primary-hover);
+        .plyr {
+            border-radius: 8px;
         }
         
         footer {
-            padding: 1rem;
+            width: 90%;
+            max-width: 800px;
             text-align: center;
-            background-color: var(--footer-bg);
+            padding: 20px 0;
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.9em;
             border-top: 1px solid var(--border-color);
+            margin-top: auto;
         }
         
-        @media (max-width: 768px) {
-            #file-name {
-                font-size: 0.9rem;
-                max-width: 90%;
-            }
-            
-            .container {
-                padding: 1rem;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-        }
-        
-        /* Plyr overrides */
-        .plyr--video .plyr__control--overlaid {
-            background: var(--primary);
-        }
-        
-        .plyr--video .plyr__control:hover, 
-        .plyr--video .plyr__control[aria-expanded="true"] {
-            background: var(--primary-hover);
-        }
-        
-        .plyr__control.plyr__tab-focus {
-            box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.5);
-        }
-        
-        .plyr--full-ui input[type="range"] {
+        footer a {
             color: var(--primary);
+            text-decoration: none;
         }
         
-        .plyr__menu__container .plyr__control[role="menuitemradio"][aria-checked="true"]::before {
-            background: var(--primary);
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .plyr--full-screen {
+            background-color: #000;
         }
     </style>
 </head>
-<body class="dark">
+<body>
     <header>
-        <div id="file-name">{file_name}</div>
+        <h1>{heading}</h1>
     </header>
 
-    <div class="container">
-        <div class="player-container">
-            <video src="{src}" class="player" playsinline controls></video>
-            <div class="action-buttons">
-                <a href="{src}" class="action-btn" download>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download
-                </a>
-                <a href="vlc://{src}" class="action-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                    Play in VLC
-                </a>
-            </div>
-        </div>
-    </div>
+    <main class="player-container">
+        <video controls crossorigin playsinline class="player">
+            <source src="{src}" type="video/mp4">
+            <p>Your browser does not support HTML5 video. Here is a <a href="{src}">link to the video</a> instead.</p>
+        </video>
+    </main>
 
     <footer>
+        <p>You are watching: <strong>{file_name}</strong></p>
         <p>Video not playing? Your browser might not support the codec. Please try downloading the file or playing in VLC.</p>
     </footer>
 
@@ -220,13 +144,29 @@ watch_tmplt = """
 """
 
 async def media_watch(message_id):
-    media_msg = await temp.BOT.get_messages(BIN_CHANNEL, message_id)
-    media = getattr(media_msg, media_msg.media.value, None)
-    src = urllib.parse.urljoin(URL, f'download/{message_id}')
-    tag = media.mime_type.split('/')[0].strip()
-    if tag == 'video':
-        heading = html.escape(f'Watch - {media.file_name}')
-        html_ = watch_tmplt.replace('{heading}', heading).replace('{file_name}', media.file_name).replace('{src}', src)
-    else:
-        html_ = '<h1>This is not streamable file</h1>'
-    return html_
+    try:
+        media_msg = await temp.BOT.get_messages(BIN_CHANNEL, message_id)
+        media = getattr(media_msg, media_msg.media.value, None)
+
+        if not media or not media.file_name or not media.mime_type:
+            return "<h1>Error: Media information not found or incomplete.</h1>"
+
+        src = urllib.parse.urljoin(URL, f'download/{message_id}')
+        tag = media.mime_type.split('/')[0].strip()
+
+        if tag == 'video':
+            heading = html.escape(f'Watch - {media.file_name}')
+            file_name = html.escape(media.file_name) # Ensure file_name is also escaped
+            html_ = watch_tmplt.replace('{heading}', heading).replace('{file_name}', file_name).replace('{src}', src)
+        elif tag == 'audio': # Optional: Handle audio files if you want to stream them with an audio player
+            heading = html.escape(f'Listen - {media.file_name}')
+            file_name = html.escape(media.file_name)
+            # You would need a different template for audio or adapt the current one
+            html_ = f"<h1>Audio Streaming Not Implemented Yet for: {file_name}</h1><audio controls><source src='{src}' type='{media.mime_type}'></audio>"
+        else:
+            html_ = f'<h1>This file type ({media.mime_type}) is not streamable.</h1>'
+        return html_
+    except Exception as e:
+        # Log the exception for debugging purposes
+        print(f"Error in media_watch: {e}")
+        return "<h1>An error occurred while preparing the media. Please try again later.</h1>"
