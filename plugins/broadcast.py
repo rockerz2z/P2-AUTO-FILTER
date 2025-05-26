@@ -36,7 +36,8 @@ async def users_broadcast(bot, message):
     success = 0
 
     async with lock:
-        for user in users:
+        # Iterate asynchronously over the cursor
+        async for user in users:
             time_taken = get_readable_time(time.time()-start_time)
             if temp.USERS_CANCEL:
                 temp.USERS_CANCEL = False
@@ -74,7 +75,8 @@ async def groups_broadcast(bot, message):
     success = 0
 
     async with lock:
-        for chat in chats:
+        # Iterate asynchronously over the cursor
+        async for chat in chats:
             time_taken = get_readable_time(time.time()-start_time)
             if temp.GROUPS_CANCEL:
                 temp.GROUPS_CANCEL = False
@@ -92,4 +94,3 @@ async def groups_broadcast(bot, message):
                 ]]
                 await b_sts.edit(f"Groups groadcast in progress...\n\nTotal Groups: <code>{total_chats}</code>\nCompleted: <code>{done} / {total_chats}</code>\nSuccess: <code>{success}</code>\nFailed: <code>{failed}</code>", reply_markup=InlineKeyboardMarkup(btn))    
         await b_sts.edit(f"Groups broadcast completed.\nCompleted in {time_taken}\n\nTotal Groups: <code>{total_chats}</code>\nCompleted: <code>{done} / {total_chats}</code>\nSuccess: <code>{success}</code>\nFailed: <code>{failed}</code>")
-
