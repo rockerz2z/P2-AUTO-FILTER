@@ -39,130 +39,85 @@ class TGCustomYield:
         media_session = client.media_sessions.get(data.dc_id, None)
 
         if media_session is None:
-            if data.dc_id != await client.storage.dc_id():
-                media_session = Session(
-                    client, data.dc_id, await Auth(client, data.dc_id, await client.storage.test_mode()).create(),
-                    await client.storage.test_mode(), is_media=True
-                )
-                await media_session.start()
-
-                for _ in range(3):
-                    exported_auth = await client.invoke(
-                        raw.functions.auth.ExportAuthorization(
-                            dc_id=data.dc_id
-                        )
-                    )
-
-                    try:
-                        await media_session.send(
-                            raw.functions.auth.ImportAuthorization(
-                                id=exported_auth.id,
-                                bytes=exported_auth.bytes
-                            )
-                        )
-                    except AuthBytesInvalid:
-                        continue
-                    else:
-                        break
-                else:
-                    await media_session.stop()
-                    raise AuthBytesInvalid
+            if data.dc_id == utils.get_peer_id(client.me.id):
+                media_session = client.delegate_session
             else:
                 media_session = Session(
-                    client, data.dc_id, await client.storage.auth_key(),
-                    await client.storage.test_mode(), is_media=True
+                    client, data.dc_id, await Auth(client, data.dc_id).create()
                 )
-                await media_session.start()
-
             client.media_sessions[data.dc_id] = media_session
-
         return media_session
 
-    @staticmethod
-    async def get_location(file_id: FileId):
-        file_type = file_id.file_type
-
-        if file_type == FileType.CHAT_PHOTO:
-            if file_id.chat_id > 0:
-                peer = raw.types.InputPeerUser(
-                    user_id=file_id.chat_id,
-                    access_hash=file_id.chat_access_hash
+    async def get_location(self, data: FileId):
+        if data.file_type == FileType.DOCUMENT:
+            return raw.types.InputDocumentFileLocation(
+                id=data.media_id,
+                access_hash=data.access_hash,
+                file_reference=data.file_reference,
+                thumb_size=""
+            )
+        elif data.file_type == FileType.PHOTO:
+            return raw.types.InputPhotoFileLocation(
+                id=data.media_id,
+                access_hash=data.access_hash,
+                file_reference=data.file_reference,
+                thumb_size=""
+            )
+        elif data.file_type == FileType.WEB_DOCUMENT:
+            if data.url.startswith("http"):
+                return raw.types.InputWebFileLocation(
+                    url=data.url,
+                    access_hash=data.access_hash
                 )
-            else:
-                if file_id.chat_access_hash == 0:
-                    peer = raw.types.InputPeerChat(
-                        chat_id=-file_id.chat_id
-                    )
-                else:
-                    peer = raw.types.InputPeerChannel(
-                        channel_id=utils.get_channel_id(file_id.chat_id),
-                        access_hash=file_id.chat_access_hash
-                    )
-
-            location = raw.types.InputPeerPhotoFileLocation(
-                peer=peer,
-                volume_id=file_id.volume_id,
-                local_id=file_id.local_id,
-                big=file_id.thumbnail_source == ThumbnailSource.CHAT_PHOTO_BIG
-            )
-        elif file_type == FileType.PHOTO:
-            location = raw.types.InputPhotoFileLocation(
-                id=file_id.media_id,
-                access_hash=file_id.access_hash,
-                file_reference=file_id.file_reference,
-                thumb_size=file_id.thumbnail_size
-            )
         else:
-            location = raw.types.InputDocumentFileLocation(
-                id=file_id.media_id,
-                access_hash=file_id.access_hash,
-                file_reference=file_id.file_reference,
-                thumb_size=file_id.thumbnail_size
-            )
+            raise Exception("Unsupported file type")
 
-        return location
-
-    async def yield_file(self, media_msg: Message, offset: int, first_part_cut: int,
-                         last_part_cut: int, part_count: int, chunk_size: int):
+    async def yield_file(self, media_msg: Message):
         client = self.main_bot
         data = await self.generate_file_properties(media_msg)
         media_session = await self.generate_media_session(client, media_msg)
 
-        current_part = 1
-
         location = await self.get_location(data)
 
-        r = await media_session.send(
-            raw.functions.upload.GetFile(
-                location=location,
-                offset=offset,
-                limit=chunk_size
-            ),
-        )
+        if data.file_type == FileType.WEB_DOCUMENT:
+            r = await media_session.send(
+                raw.functions.upload.GetWebFile(
+                    location=location,
+                    offset=0,
+                    limit=1024 * 1024
+                ),
+            )
+            yield r.bytes
+            return
 
-        if isinstance(r, raw.types.upload.File):
-            while current_part <= part_count:
-                chunk = r.bytes
-                if not chunk:
-                    break
-                offset += chunk_size
-                if part_count == 1:
-                    yield chunk[first_part_cut:last_part_cut]
-                    break
-                if current_part == 1:
-                    yield chunk[first_part_cut:]
-                if 1 < current_part <= part_count:
-                    yield chunk
-
+        offset = 0
+        chunk_s = await chunk_size(data.file_size)
+        
+        while True:
+            try:
                 r = await media_session.send(
                     raw.functions.upload.GetFile(
                         location=location,
                         offset=offset,
-                        limit=chunk_size
+                        limit=chunk_s
                     ),
                 )
+            except AuthBytesInvalid:
+                await media_session.recreate()
+                continue
+            except Exception as e:
+                # Log the error, but don't stop the stream if it's recoverable
+                print(f"Error fetching file chunk: {e}")
+                break
 
-                current_part += 1
+            if isinstance(r, raw.types.upload.File):
+                if r.bytes:
+                    yield r.bytes
+                    offset += chunk_s
+                else:
+                    break
+            else:
+                break
 
     async def download_as_bytesio(self, media_msg: Message):
         client = self.main_bot
