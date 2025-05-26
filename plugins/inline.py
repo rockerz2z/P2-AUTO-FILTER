@@ -2,7 +2,7 @@ from pyrogram import Client
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultCachedDocument, InlineQuery
 from database.ia_filterdb import get_search_results
 from utils import get_size, temp, get_verify_status, is_subscribed, is_premium
-from info import CACHE_TIME, SUPPORT_LINK, UPDATES_LINK, FILE_CAPTION, IS_VERIFY
+from info import CACHE_TIME, SUPPORT_LINK, UPDATES_LINK, FILE_CAPTION, IS_VERIFY, MAX_BTN
 
 cache_time = CACHE_TIME
 
@@ -13,43 +13,54 @@ def is_banned(query: InlineQuery):
 async def inline_search(bot, query):
     """Show search results for given inline query"""
 
+    if is_banned(query):
+        await query.answer(results=[],
+                           cache_time=0,
+                           switch_pm_text="You're banned user. Contact support group.",
+                           switch_pm_parameter="start") # Changed parameter to 'start' for consistency
+        return
+
     is_fsub = await is_subscribed(bot, query)
-    if is_fsub:
+    if is_fsub is not True: # Check if it's not True (False or any error)
         await query.answer(results=[],
                            cache_time=0,
                            switch_pm_text="Join my Updates Channel :(",
                            switch_pm_parameter="inline_fsub")
         return
 
-
-    verify_status = await get_verify_status(query.from_user.id)
-    if IS_VERIFY and not verify_status['is_verified'] and not await is_premium(query.from_user.id, bot):
-        await query.answer(results=[],
-                           cache_time=0,
-                           switch_pm_text="You're not verified today :(",
-                           switch_pm_parameter="inline_verify")
-        return
+    if IS_VERIFY: # Only check verification if IS_VERIFY is True
+        verify_status = await get_verify_status(query.from_user.id)
+        if not verify_status.get('is_verified') and not await is_premium(query.from_user.id, bot): # Use .get() for safety
+            await query.answer(results=[],
+                               cache_time=0,
+                               switch_pm_text="You're not verified today :(",
+                               switch_pm_parameter="inline_verify")
+            return
     
-    if is_banned(query):
+    string = query.query.strip().lower()
+    if not string:
+        # If no query, maybe show some trending or recent files, or a prompt
         await query.answer(results=[],
                            cache_time=0,
-                           switch_pm_text="You're banned user :(",
+                           switch_pm_text="Type something to search!",
                            switch_pm_parameter="start")
         return
 
+    offset = int(query.offset or 0)
+    files, total, next_offset = await get_search_results(string, offset=offset, limit=MAX_BTN)
 
     results = []
-    string = query.query
-    offset = int(query.offset or 0)
-    files, next_offset, total = await get_search_results(string, offset=offset)
-
     for file in files:
-        reply_markup = get_reply_markup(string)
-        f_caption=FILE_CAPTION.format(
+        # Ensure caption is a string, even if None
+        file_caption_text = str(file.get('caption') or "") # Use .get() and default to empty string
+        
+        f_caption = FILE_CAPTION.format(
             file_name=file['file_name'],
             file_size=get_size(file['file_size']),
-            caption=file['caption']
+            caption=file_caption_text # Use the sanitized caption
         )
+        reply_markup = get_reply_markup(string) # Pass the original query string for "Search Again"
+
         results.append(
             InlineQueryResultCachedDocument(
                 title=file['file_name'],
