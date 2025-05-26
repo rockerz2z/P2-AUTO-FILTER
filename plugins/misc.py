@@ -3,17 +3,28 @@ from speedtest import Speedtest, ConfigRetrievalError, SpeedtestBestServerFailur
 from pyrogram import Client, filters, enums
 from pyrogram.errors import UserNotParticipant
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from utils import get_size
+from utils import get_size, get_readable_time
 from datetime import datetime
 import os
+import time
 
 
 @Client.on_message(filters.command('id'))
 async def showid(client, message):
     chat_type = message.chat.type
-    replied_to_msg = bool(message.reply_to_message)
+    replied_to_msg = message.reply_to_message
+    
     if replied_to_msg:
-        return await message.reply_text(f"""The forwarded message channel {replied_to_msg.chat.title}'s id is, <code>{replied_to_msg.chat.id}</code>.""")
+        if replied_to_msg.from_user:
+            user_id_text = f"★ User ID of replied user: <code>{replied_to_msg.from_user.id}</code>"
+        elif replied_to_msg.sender_chat and replied_to_msg.sender_chat.type == enums.ChatType.CHANNEL:
+            user_id_text = f"★ Channel ID of forwarded message: <code>{replied_to_msg.sender_chat.id}</code>"
+        else:
+            user_id_text = "Could not determine ID for the replied message."
+        
+        await message.reply_text(user_id_text)
+        return
+
     if chat_type == enums.ChatType.PRIVATE:
         await message.reply_text(f'★ User ID: <code>{message.from_user.id}</code>')
 
@@ -26,87 +37,109 @@ async def showid(client, message):
 
 @Client.on_message(filters.command('speedtest') & filters.user(ADMINS))
 async def speedtest(client, message):
-    #from - https://github.com/weebzone/WZML-X/blob/master/bot/modules/speedtest.py
-    msg = await message.reply_text("Initiating Speedtest...")
+    # from - https://github.com/weebzone/WZML-X/blob/master/bot/modules/speedtest.py
+    speed = "<b>Speedtest Results</b>\n\n"
+    status_message = await message.reply_text("`Running Speed Test . . .`")
+
     try:
-        speed = Speedtest()
-        speed.get_best_server()
-    except (ConfigRetrievalError, SpeedtestBestServerFailure):
-        await msg.edit("Can't connect to Server at the Moment, Try Again Later !")
-        return
-    speed.download()
-    speed.upload()
-    speed.results.share()
-    result = speed.results.dict()
-    photo = result['share']
-    text = f'''
-➲ <b>SPEEDTEST INFO</b>
-┠ <b>Upload:</b> <code>{get_size(result['upload'])}/s</code>
-┠ <b>Download:</b>  <code>{get_size(result['download'])}/s</code>
-┠ <b>Ping:</b> <code>{result['ping']} ms</code>
-┠ <b>Time:</b> <code>{datetime.strptime(result['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d %H:%M:%S")}</code>
-┠ <b>Data Sent:</b> <code>{get_size(int(result['bytes_sent']))}</code>
-┖ <b>Data Received:</b> <code>{get_size(int(result['bytes_received']))}</code>
+        test = Speedtest()
+        # Adding more specific exception handling for speedtest setup
+        try:
+            test.get_best_server()
+        except ConfigRetrievalError:
+            await status_message.edit("Failed to retrieve speedtest configuration. Please try again later.")
+            return
+        except SpeedtestBestServerFailure:
+            await status_message.edit("Failed to find best server for speedtest. Please try again later.")
+            return
+        except Exception as e:
+            await status_message.edit(f"An unexpected error occurred during speedtest setup: {e}")
+            return
 
-➲ <b>SPEEDTEST SERVER</b>
-┠ <b>Name:</b> <code>{result['server']['name']}</code>
-┠ <b>Country:</b> <code>{result['server']['country']}, {result['server']['cc']}</code>
-┠ <b>Sponsor:</b> <code>{result['server']['sponsor']}</code>
-┠ <b>Latency:</b> <code>{result['server']['latency']}</code>
-┠ <b>Latitude:</b> <code>{result['server']['lat']}</code>
-┖ <b>Longitude:</b> <code>{result['server']['lon']}</code>
+        start_time = time.time()
+        test.download()
+        end_time = time.time()
+        download_time = round(end_time - start_time, 2)
+        
+        start_time = time.time()
+        test.upload()
+        end_time = time.time()
+        upload_time = round(end_time - start_time, 2)
 
-➲ <b>CLIENT DETAILS</b>
-┠ <b>IP Address:</b> <code>{result['client']['ip']}</code>
-┠ <b>Latitude:</b> <code>{result['client']['lat']}</code>
-┠ <b>Longitude:</b> <code>{result['client']['lon']}</code>
-┠ <b>Country:</b> <code>{result['client']['country']}</code>
-┠ <b>ISP:</b> <code>{result['client']['isp']}</code>
-┖ <b>ISP Rating:</b> <code>{result['client']['isprating']}</code>
-'''
-    await message.reply_photo(photo=photo, caption=text)
-    await msg.delete()
+        test.results.share()
+        result = test.results.dict()
+
+        download_speed = get_size(result['download'])
+        upload_speed = get_size(result['upload'])
+        ping_time = result['ping']
+        client_location = result['client']['country']
+        client_isp = result['client']['isp']
+        server_location = result['server']['country']
+        server_sponsor = result['server']['sponsor']
+        
+        speed += f"<b>Download:</b> {download_speed}\n"
+        speed += f"<b>Upload:</b> {upload_speed}\n"
+        speed += f"<b>Ping:</b> {ping_time}\n"
+        speed += f"<b>ISP:</b> {client_isp}\n"
+        speed += f"<b>Server:</b> {server_sponsor} ({server_location})\n"
+        speed += f"<b>Download Time:</b> {get_readable_time(download_time)}\n"
+        speed += f"<b>Upload Time:</b> {get_readable_time(upload_time)}\n"
+
+        await status_message.edit(speed)
+
+    except Exception as e:
+        await status_message.edit(f"Speedtest failed due to an error: {e}")
 
 
-@Client.on_message(filters.command("info"))
-async def who_is(client, message):
-    status_message = await message.reply_text(
-        "Fetching user info..."
-    )
+@Client.on_message(filters.command('info'))
+async def user_info(client, message):
+    # from https://github.com/weebzone/WZML-X/blob/master/bot/modules/info.py
+    status_message = await message.reply("`Workspaceing info...`")
+    from_user = None
     if message.reply_to_message:
-        from_user_id = message.reply_to_message.from_user.id
-    elif len(message.command) > 1:
-        from_user_id = message.command[1]
-    else:
-        from_user_id = message.from_user.id
-    try:
-        from_user = await client.get_users(from_user_id)
-    except Exception as error:
-        await status_message.edit(f'Error: {error}')
-        return
+        from_user = message.reply_to_message.from_user
+    elif len(message.command) == 2:
+        try:
+            from_user = await client.get_users(int(message.command[1]))
+        except Exception:
+            try:
+                from_user = await client.get_users(message.command[1])
+            except Exception as e:
+                return await status_message.edit(f"`Error: {e}`")
+    elif not message.reply_to_message and len(message.command) != 2:
+        from_user = message.from_user
+    
+    if not from_user:
+        return await status_message.edit("User not found or no user specified.")
 
     message_out_str = ""
-    message_out_str += f"<b>➲First Name:</b> {from_user.first_name}\n"
-    last_name = from_user.last_name or 'Not have'
-    message_out_str += f"<b>➲Last Name:</b> {last_name}\n"
-    message_out_str += f"<b>➲Telegram ID:</b> <code>{from_user.id}</code>\n"
-    username = f'@{from_user.username}' if from_user.username else 'Not have'
-    dc_id = from_user.dc_id or "Not found"
-    message_out_str += f"<b>➲Data Centre:</b> <code>{dc_id}</code>\n"
-    message_out_str += f"<b>➲Username:</b> {username}\n"
-    message_out_str += f"<b>➲Last Online:</b> {last_online(from_user)}\n"
-    message_out_str += f"<b>➲User 𝖫𝗂𝗇𝗄:</b> <a href='tg://user?id={from_user.id}'><b>Click Here</b></a>\n"
-    if message.chat.type in [enums.ChatType.SUPERGROUP, enums.ChatType.GROUP]:
+    message_out_str += f"<b>First Name:</b> {from_user.first_name}\n"
+    if from_user.last_name:
+        message_out_str += f"<b>Last Name:</b> {from_user.last_name}\n"
+    message_out_str += f"<b>Telegram ID:</b> <code>{from_user.id}</code>\n"
+    if from_user.username:
+        message_out_str += f"<b>Username:</b> @{from_user.username}\n"
+    message_out_str += f"<b>Is Bot:</b> {from_user.is_bot}\n"
+    message_out_str += f"<b>Status:</b> {last_online(from_user)}\n"
+    message_out_str += f"<b>Profile Link:</b> {from_user.mention}\n"
+    if from_user.dc_id:
+        message_out_str += f"<b>DC ID:</b> {from_user.dc_id}\n"
+    if from_user.photo:
+        message_out_str += f"<b>User Profile Photo:</b> <a href=\"https://t.me/{client.me.username}?start=info_{from_user.id}\">Link</a>\n" # Assuming a link can be generated
+    
+    # Try to get chat member status if in a group
+    if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
         try:
-            chat_member_p = await message.chat.get_member(from_user.id)
-            joined_date = chat_member_p.joined_date.strftime('%Y.%m.%d %H:%M:%S') if chat_member_p.joined_date else 'Not found'
+            chat_member = await message.chat.get_member(from_user.id)
+            joined_date = chat_member.joined_date.strftime("%Y-%m-%d %H:%M:%S") if chat_member.joined_date else "N/A"
             message_out_str += (
-                "<b>➲Joined this Chat on:</b> <code>"
+                f"<b>Joined This Chat on:</b> <code>"
                 f"{joined_date}"
-                "</code>\n"
+                f"</code>\n"
             )
         except UserNotParticipant:
-            pass
+            pass # User is not a participant in this chat
+
     chat_photo = from_user.photo
     if chat_photo:
         local_user_photo = await client.download_media(
@@ -130,21 +163,24 @@ async def who_is(client, message):
     await status_message.delete()
 
 
-
 def last_online(from_user):
-    time = ""
+    time_str = ""
     if from_user.is_bot:
-        time += "🤖 Bot :("
+        time_str += "🤖 Bot :("
     elif from_user.status == enums.UserStatus.RECENTLY:
-        time += "Recently"
+        time_str += "Recently"
     elif from_user.status == enums.UserStatus.LAST_WEEK:
-        time += "Within the last week"
+        time_str += "Within the last week"
     elif from_user.status == enums.UserStatus.LAST_MONTH:
-        time += "Within the last month"
+        time_str += "Within the last month"
     elif from_user.status == enums.UserStatus.LONG_AGO:
-        time += "A long time ago :("
+        time_str += "A long time ago :("
     elif from_user.status == enums.UserStatus.ONLINE:
-        time += "Currently Online"
-    elif from_user.status == enums.UserStatus.OFFLINE:
-        time += from_user.last_online_date.strftime("%a, %d %b %Y, %H:%M:%S")
-    return time
+        time_str += "Online"
+    else:
+        # Convert datetime object to string if it exists
+        if from_user.status:
+            time_str += from_user.status.strftime("%Y-%m-%d %H:%M:%S") # Format datetime object
+        else:
+            time_str += "Unknown" # Fallback if status is none or unrecognized
+    return time_str
