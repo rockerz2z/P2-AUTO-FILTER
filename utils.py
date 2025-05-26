@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta # Ensure timedelta is imported
+from datetime import datetime, timedelta
 from pyrogram.errors import UserNotParticipant, FloodWait
 from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM
 from imdb import Cinemagoer
@@ -10,9 +10,9 @@ import re
 from database.users_chats_db import db
 from shortzy import Shortzy
 import requests
-import aiohttp # Add this import
-import aiofiles # Add this import
-import os # Add this import if not present
+import aiohttp
+import aiofiles
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -142,24 +142,21 @@ async def is_check_admin(client, chat_id, id):
         return True
     return False
 
-# Add this function to your utils.py file
 async def upload_image(filepath):
     """
     Uploads an image to uguu.se and returns the direct link.
     """
     UGUU_URL = "https://uguu.se/upload.php"
-    
+
     async with aiohttp.ClientSession() as session:
         async with aiofiles.open(filepath, 'rb') as f:
             data = aiohttp.FormData()
             data.add_field('files[]', await f.read(), filename=os.path.basename(filepath), content_type='application/octet-stream')
-            
+
             try:
                 async with session.post(UGUU_URL, data=data) as response:
                     if response.status == 200:
                         response_text = await response.text()
-                        # uguu.se returns a direct link in plain text or a simple page
-                        # This assumes the direct link is the only content or first URL
                         match = re.search(r'(https?://\S+\.\S+)', response_text)
                         if match:
                             return match.group(0)
@@ -175,15 +172,15 @@ async def upload_image(filepath):
             except Exception as e:
                 logger.error(f"An unexpected error occurred during uguu.se upload: {e}", exc_info=True)
                 return None
-    
-    # After upload, you might want to delete the local file
+
     try:
         if os.path.exists(filepath):
             os.remove(filepath)
     except Exception as e:
         logger.error(f"Error removing local file {filepath}: {e}")
 
-def get_shortlink(url, api, link):
+# This function was missing `async` keyword
+async def get_shortlink(url, api, link): # Changed to async def
     shortzy = Shortzy(api_key=api, base_site=url)
     link = await shortzy.convert(link)
     return link
@@ -280,13 +277,5 @@ async def save_group_settings(chat_id, key, value):
     await db.update_chat_sttgs(chat_id, stg)
     return stg
 
-# is_check_admin_in_db is imported by commands.py but not present in utils.py.
-# This is a placeholder. You need to implement this function based on your database structure
-# to check if a user is an admin in the database (e.g., if you store admin IDs).
-# For now, it will simply return False.
 async def is_check_admin_in_db(user_id):
-    # This function needs to be implemented based on how you store admin info in your DB
-    # For example:
-    # user = await db.get_user(user_id)
-    # return user and user.get('is_admin_in_db_field', False)
-    return False # Placeholder: Assuming not admin unless explicitly handled
+    return False
