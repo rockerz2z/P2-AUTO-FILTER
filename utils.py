@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta # Ensure timedelta is imported
 from pyrogram.errors import UserNotParticipant, FloodWait
 from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM
 from imdb import Cinemagoer
@@ -7,13 +7,16 @@ import asyncio
 from pyrogram.types import InlineKeyboardButton
 from pyrogram import enums
 import re
-from database.users_chats_db import db # Ensure this import is present
+from database.users_chats_db import db
 from shortzy import Shortzy
 import requests
+import aiohttp # Add this import
+import aiofiles # Add this import
+import os # Add this import if not present
 
-logger = logging.getLogger(__name__) # Initialize logger for this module
+logger = logging.getLogger(__name__)
 
-imdb = Cinemagoer() 
+imdb = Cinemagoer()
 
 class temp(object):
     START_TIME = 0
@@ -61,7 +64,7 @@ async def is_premium(user_id, client):
     """
     if user_id in ADMINS:
         return True # Admins are always considered premium
-    
+
     user_data = await db.get_user(user_id)
     if user_data and user_data.get('status', {}).get('premium'):
         premium_info = user_data.get('status', {})
@@ -75,19 +78,13 @@ async def is_premium(user_id, client):
             return False
     return False
 
-# Add this function to your utils.py file
 async def check_premium(client):
     """
     Periodically checks premium status of users.
-    This is a placeholder. You might want to implement
-    actual logic to iterate through users and update their
-    premium status based on your criteria.
     """
     while True:
-        # Implement your premium checking logic here.
-        # For example, iterating through users, checking expiry dates, etc.
         logger.info("Running premium check task...")
-        
+
         try:
             premium_users = await db.get_premium_users()
             for user_data in premium_users:
@@ -98,7 +95,6 @@ async def check_premium(client):
                     if expiry_date and datetime.now() > expiry_date:
                         await db.update_premium_status(user_id, False, None)
                         logger.info(f"Premium expired for user {user_id}")
-                        # Optionally notify the user
                         try:
                             await client.send_message(user_id, "Your premium plan has expired!")
                         except Exception as e:
@@ -106,8 +102,7 @@ async def check_premium(client):
         except Exception as e:
             logger.error(f"Error during premium check: {e}", exc_info=True)
 
-        # Sleep for a certain period before checking again (e.g., 6 hours)
-        await asyncio.sleep(6 * 3600) 
+        await asyncio.sleep(6 * 3600)
 
 async def get_poster(query, bulk=False, id=False):
     if bulk:
@@ -147,7 +142,48 @@ async def is_check_admin(client, chat_id, id):
         return True
     return False
 
-async def get_shortlink(url, api, link):
+# Add this function to your utils.py file
+async def upload_image(filepath):
+    """
+    Uploads an image to uguu.se and returns the direct link.
+    """
+    UGUU_URL = "https://uguu.se/upload.php"
+    
+    async with aiohttp.ClientSession() as session:
+        async with aiofiles.open(filepath, 'rb') as f:
+            data = aiohttp.FormData()
+            data.add_field('files[]', await f.read(), filename=os.path.basename(filepath), content_type='application/octet-stream')
+            
+            try:
+                async with session.post(UGUU_URL, data=data) as response:
+                    if response.status == 200:
+                        response_text = await response.text()
+                        # uguu.se returns a direct link in plain text or a simple page
+                        # This assumes the direct link is the only content or first URL
+                        match = re.search(r'(https?://\S+\.\S+)', response_text)
+                        if match:
+                            return match.group(0)
+                        else:
+                            logger.error(f"Uguu.se upload successful but no direct link found in response: {response_text}")
+                            return None
+                    else:
+                        logger.error(f"Uguu.se upload failed with status {response.status}: {await response.text()}")
+                        return None
+            except aiohttp.ClientError as e:
+                logger.error(f"Network error during uguu.se upload: {e}", exc_info=True)
+                return None
+            except Exception as e:
+                logger.error(f"An unexpected error occurred during uguu.se upload: {e}", exc_info=True)
+                return None
+    
+    # After upload, you might want to delete the local file
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    except Exception as e:
+        logger.error(f"Error removing local file {filepath}: {e}")
+
+def get_shortlink(url, api, link):
     shortzy = Shortzy(api_key=api, base_site=url)
     link = await shortzy.convert(link)
     return link
@@ -171,7 +207,7 @@ def get_wish():
     else:
         status = "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
     return status
-    
+
 async def get_seconds(time_string):
     def extract_value_and_unit(ts):
         value = ""
@@ -209,10 +245,10 @@ async def get_verify_status(user_id):
     user = temp.VERIFICATIONS.get(user_id)
     if not user:
         return {'is_verified': False}
-    
+
     current_time = datetime.now()
     last_verified = user['last_verified']
-    
+
     if current_time - last_verified <= timedelta(days=1):
         return {'is_verified': True, 'remaining_time': (last_verified + timedelta(days=1)) - current_time}
     else:
@@ -243,3 +279,14 @@ async def save_group_settings(chat_id, key, value):
     temp.SETTINGS[chat_id] = stg
     await db.update_chat_sttgs(chat_id, stg)
     return stg
+
+# is_check_admin_in_db is imported by commands.py but not present in utils.py.
+# This is a placeholder. You need to implement this function based on your database structure
+# to check if a user is an admin in the database (e.g., if you store admin IDs).
+# For now, it will simply return False.
+async def is_check_admin_in_db(user_id):
+    # This function needs to be implemented based on how you store admin info in your DB
+    # For example:
+    # user = await db.get_user(user_id)
+    # return user and user.get('is_admin_in_db_field', False)
+    return False # Placeholder: Assuming not admin unless explicitly handled
