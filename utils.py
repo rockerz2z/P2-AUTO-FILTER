@@ -1,17 +1,17 @@
 import logging
-from pyrogram.errors import UserNotParticipant, FloodWait, RPCError
-from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM, LOG_CHANNEL # Added LOG_CHANNEL
+from datetime import datetime
+from pyrogram.errors import UserNotParticipant, FloodWait
+from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM
 from imdb import Cinemagoer
 import asyncio
 from pyrogram.types import InlineKeyboardButton
 from pyrogram import enums
 import re
-from datetime import datetime, timedelta
-from database.users_chats_db import db # Ensure this is an async db object
+from database.users_chats_db import db # Ensure this import is present
 from shortzy import Shortzy
-import requests # Still used for get_poster, consider replacing with aiohttp if possible
+import requests
 
-logger = logging.getLogger(__name__) # Initialize logger
+logger = logging.getLogger(__name__) # Initialize logger for this module
 
 imdb = Cinemagoer() 
 
@@ -24,161 +24,155 @@ class temp(object):
     U_NAME = None
     B_NAME = None
     SETTINGS = {}
-    VERIFICATIONS = {} # Stores verification data temporarily
-    FILES = {} # Stores temporary file lists for pagination
+    VERIFICATIONS = {}
+    FILES = {}
     USERS_CANCEL = False
     GROUPS_CANCEL = False
     BOT = None
     PREMIUM = {}
-    DELETE_MSG_IDS = {} # To store message IDs for auto-deletion
 
-async def is_subscribed(bot, user_id):
-    """Checks if a user is subscribed to force subscribe channels."""
+async def is_subscribed(bot, query):
     btn = []
-    # Check if user is premium, if so, no force sub needed
-    is_prem = await is_premium(user_id, bot)
-    if is_prem:
-        return True # Premium users bypass force sub
-
-    stg = await db.get_bot_sttgs() # Await db call
-    force_sub_channels_str = stg.get('FORCE_SUB_CHANNELS')
-
-    if not force_sub_channels_str:
-        return True # No force sub channels configured
-
-    for id_str in force_sub_channels_str.split(' '):
+    if await is_premium(query.from_user.id, bot):
+        return btn
+    stg = db.get_bot_sttgs()
+    if not stg or not stg.get('FORCE_SUB_CHANNELS'):
+        return btn
+    for id in stg.get('FORCE_SUB_CHANNELS').split(' '):
+        chat = await bot.get_chat(int(id))
         try:
-            chat_id = int(id_str)
-            chat = await bot.get_chat(chat_id)
-            try:
-                member = await bot.get_chat_member(chat_id, user_id)
-                if member.status in ["member", "administrator", "creator"]:
-                    continue # User is subscribed
-                else:
-                    # User is restricted, left, or kicked
-                    btn.append(
-                        [InlineKeyboardButton(f'Join : {chat.title}', url=chat.invite_link)]
-                    )
-            except UserNotParticipant:
-                btn.append(
-                    [InlineKeyboardButton(f'Join : {chat.title}', url=chat.invite_link)]
-                )
-            except Exception as e:
-                logger.error(f"Error checking chat member for {user_id} in {chat_id}: {e}")
-                # If there's an error getting chat member, assume not subscribed for safety
-                btn.append(
-                    [InlineKeyboardButton(f'Join : {chat.title}', url=chat.invite_link)]
-                )
-        except ValueError:
-            logger.warning(f"Invalid channel ID in FORCE_SUB_CHANNELS: {id_str}")
-            continue # Skip invalid channel IDs
-        except Exception as e:
-            logger.error(f"Error getting chat info for force sub channel {id_str}: {e}")
-            continue # Skip if chat info cannot be retrieved
+            await bot.get_chat_member(int(id), query.from_user.id)
+        except UserNotParticipant:
+            btn.append(
+                [InlineKeyboardButton(f'Join : {chat.title}', url=chat.invite_link)]
+            )
+    if stg and stg.get('REQUEST_FORCE_SUB_CHANNELS'):
+        chat = await bot.get_chat(int(stg.get('REQUEST_FORCE_SUB_CHANNELS')))
+        if not await db.find_join_req(query.from_user.id, chat.id):
+            btn.append(
+                [InlineKeyboardButton(f'Request to Join : {chat.title}', url=chat.invite_link)]
+            )
+    return btn
 
-    if btn:
-        return btn # Return buttons if not subscribed to all
-    return True # All checks passed, user is subscribed
-
-
-async def is_premium(user_id, bot):
-    """Checks if a user is premium."""
-    try:
-        plan = await db.get_plan(user_id) # Await db call
-        if plan and plan.get('premium'):
+async def is_premium(user_id, client):
+    """
+    Checks if a user is premium.
+    This function should retrieve premium status from your database.
+    """
+    if user_id in ADMINS:
+        return True # Admins are always considered premium
+    
+    user_data = await db.get_user(user_id)
+    if user_data and user_data.get('status', {}).get('premium'):
+        premium_info = user_data.get('status', {})
+        expiry_date = premium_info.get('expire')
+        if expiry_date and datetime.now() < expiry_date:
             return True
-        return False
-    except Exception as e:
-        logger.error(f"Error checking premium status for user {user_id}: {e}")
-        return False
+        else:
+            # Premium expired, update status in DB
+            await db.update_premium_status(user_id, False, None)
+            logger.info(f"Premium expired for user {user_id}")
+            return False
+    return False
 
-async def upload_image(url):
-    """Uploads an image from a URL (placeholder, actual upload needs Pyrogram's send_photo)."""
-    # This function seems to be a placeholder from a web context.
-    # In a Pyrogram bot, you would download the image and then use bot.send_photo.
-    # For now, keeping it as is, but note it might not directly upload to Telegram.
-    return url
+# Add this function to your utils.py file
+async def check_premium(client):
+    """
+    Periodically checks premium status of users.
+    This is a placeholder. You might want to implement
+    actual logic to iterate through users and update their
+    premium status based on your criteria.
+    """
+    while True:
+        # Implement your premium checking logic here.
+        # For example, iterating through users, checking expiry dates, etc.
+        logger.info("Running premium check task...")
+        
+        try:
+            premium_users = await db.get_premium_users()
+            for user_data in premium_users:
+                user_id = user_data['id']
+                premium_info = user_data.get('status', {})
+                if premium_info.get('premium'):
+                    expiry_date = premium_info.get('expire')
+                    if expiry_date and datetime.now() > expiry_date:
+                        await db.update_premium_status(user_id, False, None)
+                        logger.info(f"Premium expired for user {user_id}")
+                        # Optionally notify the user
+                        try:
+                            await client.send_message(user_id, "Your premium plan has expired!")
+                        except Exception as e:
+                            logger.warning(f"Could not notify user {user_id} about premium expiry: {e}")
+        except Exception as e:
+            logger.error(f"Error during premium check: {e}", exc_info=True)
 
-async def get_settings(chat_id):
-    """Fetches chat settings."""
-    return await db.get_settings(chat_id) # Await db call
+        # Sleep for a certain period before checking again (e.g., 6 hours)
+        await asyncio.sleep(6 * 3600) 
 
-async def save_group_settings(chat_id, settings):
-    """Saves group settings."""
-    await db.update_settings(chat_id, settings) # Await db call
-
+async def get_poster(query, bulk=False, id=False):
+    if bulk:
+        search = imdb.search_movie(query)
+        if not search:
+            return None
+        return search
+    elif id:
+        search = imdb.get_movie(query)
+        return search
+    else:
+        search = imdb.search_movie(query)
+        if not search:
+            return None
+        return search[0]
 
 def get_size(size):
-    """Converts bytes to human-readable size."""
-    units = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EBs"]
-    if size == 0:
-        return "0 Byte"
-    i = int(math.log(size, 1024))
-    return f"{round(size / (1024 ** i), 2)} {units[i]}"
+    """Get size in readable format"""
+    if size < 1000:
+        return f"{size} B"
+    siz = '{:.2f}'.format(size / 1024)
+    if float(siz) < 1000:
+        return f"{siz} KB"
+    siz = '{:.2f}'.format(size / (1024 * 1024))
+    if float(siz) < 1000:
+        return f"{siz} MB"
+    siz = '{:.2f}'.format(size / (1024 * 1024 * 1024))
+    if float(siz) < 1000:
+        return f"{siz} GB"
 
-async def is_check_admin(client, chat_id, user_id):
-    """Checks if a user is an admin in a chat."""
+async def is_check_admin(client, chat_id, id):
     try:
-        member = await client.get_chat_member(chat_id, user_id)
-        return member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]
+        member = await client.get_chat_member(chat_id, id)
     except UserNotParticipant:
         return False
-    except Exception as e:
-        logger.error(f"Error checking admin status for user {user_id} in chat {chat_id}: {e}")
-        return False
-
-async def is_check_admin_in_db(client, chat_id, user_id):
-    """Checks if a user is an admin in a chat and also in the bot's ADMINS list."""
-    if user_id in ADMINS:
+    if member.status in [enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
         return True
-    return await is_check_admin(client, chat_id, user_id)
+    return False
 
-
-async def get_shortlink(file_name, file_id):
-    """Generates a shortlink for a file."""
-    stg = await db.get_bot_sttgs() # Await db call
-    url = stg.get('SHORTLINK_URL')
-    api = stg.get('SHORTLINK_API')
-    
-    if not url or not api:
-        logger.warning("Shortlink URL or API key is not configured.")
-        return None
-
-    try:
-        shortzy = Shortzy(api_key=api, base_site=url)
-        # Assuming the 'link' to be shortened is a direct download link or unique identifier
-        # For a bot, this might be a link to your web server's download endpoint
-        # Example: f"{URL}download/{file_id}" if URL is your web server base URL
-        # For simplicity, let's assume it's just the file_id for now, and the shortener knows how to handle it.
-        link_to_shorten = f"{url}download/{file_id}" # Assuming URL is your web server base
-        short_link = await shortzy.convert(link_to_shorten)
-        return short_link
-    except Exception as e:
-        logger.error(f"Error generating shortlink for {file_name} ({file_id}): {e}")
-        return None
+async def get_shortlink(url, api, link):
+    shortzy = Shortzy(api_key=api, base_site=url)
+    link = await shortzy.convert(link)
+    return link
 
 def get_readable_time(seconds):
-    """Converts seconds to human-readable time."""
     periods = [('d', 86400), ('h', 3600), ('m', 60), ('s', 1)]
     result = ''
     for period_name, period_seconds in periods:
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
             result += f'{int(period_value)}{period_name}'
-    return result if result else "0s" # Ensure '0s' for 0 seconds
+    return result
 
 def get_wish():
-    """Returns a greeting based on the current time."""
-    current_hour = datetime.now().hour
-    if 5 <= current_hour < 12:
-        return "ɢᴏᴏᴅ ᴍᴏʀɴɪɴɢ 🌞"
-    elif 12 <= current_hour < 18:
-        return "ɢᴏᴏᴅ ᴀꜰᴛᴇʀɴᴏᴏɴ 🌗"
+    time = datetime.now()
+    now = time.strftime("%H")
+    if now < "12":
+        status = "ɢᴏᴏᴅ ᴍᴏʀɴɪɴɢ 🌞"
+    elif now < "18":
+        status = "ɢᴏᴏᴅ ᴀꜰᴛᴇʀɴᴏᴏɴ 🌗"
     else:
-        return "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
+        status = "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
+    return status
     
 async def get_seconds(time_string):
-    """Converts a time string (e.g., '1h', '30m', '5d') to seconds."""
     def extract_value_and_unit(ts):
         value = ""
         unit = ""
@@ -186,120 +180,66 @@ async def get_seconds(time_string):
         while index < len(ts) and ts[index].isdigit():
             value += ts[index]
             index += 1
-        unit = ts[index:].lower()
+        unit = ts[index:]
         if value:
             value = int(value)
         return value, unit
 
-    value, unit = extract_value_and_unit(time_string)
-    
-    if not value or not unit:
-        raise ValueError("Invalid time string format. Expected format like '1h', '30m', '5d'.")
+    time_string = time_string.lower().strip()
+    if not time_string:
+        return 0
 
-    if unit == 's':
+    value, unit = extract_value_and_unit(time_string)
+
+    if not value or not unit:
+        raise ValueError("Invalid time string format")
+
+    if unit.startswith('s'):
         return value
-    elif unit == 'm':
+    elif unit.startswith('m'):
         return value * 60
-    elif unit == 'h':
+    elif unit.startswith('h'):
         return value * 3600
-    elif unit == 'd':
+    elif unit.startswith('d'):
         return value * 86400
     else:
-        raise ValueError(f"Unknown time unit: {unit}. Supported units: s, m, h, d.")
-
-async def get_poster(query, bulk=False):
-    """Fetches movie poster and details from IMDb."""
-    try:
-        if bulk: # For multiple results
-            movies = imdb.search_movie(query)
-            if not movies:
-                return []
-            return movies[:10] # Return top 10 results
-        else: # For single result
-            movie = imdb.search_movie(query)
-            if not movie:
-                return None
-            movie_id = movie[0].movieID
-            full_movie = imdb.get_movie(movie_id)
-            if not full_movie:
-                return None
-
-            # Extract relevant details
-            title = full_movie.get('title')
-            year = full_movie.get('year')
-            plot = full_movie.get('plot outline')
-            poster = full_movie.get('full-size poster')
-            rating = full_movie.get('rating')
-            genres = ', '.join(full_movie.get('genres', []))
-            directors = ', '.join([d['name'] for d in full_movie.get('directors', [])])
-            cast = ', '.join([c['name'] for c in full_movie.get('cast', [])[:5]]) # Top 5 cast
-
-            return {
-                'title': title,
-                'year': year,
-                'plot': plot,
-                'poster': poster,
-                'rating': rating,
-                'genres': genres,
-                'directors': directors,
-                'cast': cast,
-                'imdb_url': f"https://www.imdb.com/title/tt{movie_id}/",
-                'movieID': movie_id,
-                # Add other fields if needed for your template
-            }
-    except Exception as e:
-        logger.error(f"Error fetching IMDb poster for query '{query}': {e}")
-        return None
+        raise ValueError("Invalid time unit. Use s (seconds), m (minutes), h (hours), d (days).")
 
 async def get_verify_status(user_id):
-    """Gets user verification status from DB."""
-    return await db.get_verify_status(user_id) # Await db call
+    user = temp.VERIFICATIONS.get(user_id)
+    if not user:
+        return {'is_verified': False}
+    
+    current_time = datetime.now()
+    last_verified = user['last_verified']
+    
+    if current_time - last_verified <= timedelta(days=1):
+        return {'is_verified': True, 'remaining_time': (last_verified + timedelta(days=1)) - current_time}
+    else:
+        temp.VERIFICATIONS.pop(user_id, None)
+        return {'is_verified': False}
 
-async def update_verify_status(user_id, status_data):
-    """Updates user verification status in DB."""
-    await db.update_verify_status(user_id, status_data) # Await db call
+async def update_verify_status(user_id):
+    temp.VERIFICATIONS[user_id] = {'is_verified': True, 'last_verified': datetime.now()}
 
-
-async def broadcast_messages(user_id, message, pin=False):
-    """Sends a message to a user for broadcast."""
-    try:
-        if pin:
-            await message.copy(chat_id=user_id, disable_notification=False).pin(disable_notification=True)
+async def get_settings(chat_id):
+    chat_settings = temp.SETTINGS.get(chat_id)
+    if not chat_settings:
+        chat_settings = await db.get_chat(chat_id)
+        if not chat_settings:
+            temp.SETTINGS[chat_id] = {
+                'file_caption': None,
+                'pm_search': True,
+                'tutorial': None,
+                'max_btn': 5
+            }
         else:
-            await message.copy(chat_id=user_id, disable_notification=False)
-        return 'Success'
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-        return await broadcast_messages(user_id, message, pin) # Retry after flood wait
-    except RPCError as e:
-        logger.error(f"RPCError during broadcast to {user_id}: {e}")
-        # Handle specific RPC errors like UserBlocked, UserDeactivated etc.
-        # For example, if user blocked bot, you might want to remove them from DB.
-        if "USER_BOT_BLOCKED" in str(e) or "USER_DEACTIVATED" in str(e):
-            await db.delete_user(user_id) # Example: delete user if blocked/deactivated
-        return 'Error'
-    except Exception as e:
-        logger.error(f"Unexpected error during broadcast to {user_id}: {e}", exc_info=True)
-        return 'Error'
+            temp.SETTINGS[chat_id] = chat_settings.get('settings', {})
+    return temp.SETTINGS[chat_id]
 
-async def groups_broadcast_messages(chat_id, message, pin=False):
-    """Sends a message to a group for broadcast."""
-    try:
-        if pin:
-            await message.copy(chat_id=chat_id, disable_notification=False).pin(disable_notification=True)
-        else:
-            await message.copy(chat_id=chat_id, disable_notification=False)
-        return 'Success'
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-        return await groups_broadcast_messages(chat_id, message, pin) # Retry after flood wait
-    except RPCError as e:
-        logger.error(f"RPCError during group broadcast to {chat_id}: {e}")
-        # Handle specific RPC errors like ChatWriteForbidden, ChatRestricted etc.
-        # For example, if bot is kicked from chat, you might want to remove chat from DB.
-        if "CHAT_WRITE_FORBIDDEN" in str(e) or "CHAT_KICKED" in str(e):
-            await db.delete_chat(chat_id) # Example: delete chat if bot is kicked
-        return 'Error'
-    except Exception as e:
-        logger.error(f"Unexpected error during group broadcast to {chat_id}: {e}", exc_info=True)
-        return 'Error'
+async def save_group_settings(chat_id, key, value):
+    stg = await get_settings(chat_id)
+    stg[key] = value
+    temp.SETTINGS[chat_id] = stg
+    await db.update_chat_sttgs(chat_id, stg)
+    return stg
