@@ -10,7 +10,7 @@ from info import ADMINS
 async def executor(client, message):
     try:
         code = message.text.split(" ", 1)[1]
-    except:
+    except IndexError: # Changed to IndexError for clarity
         return await message.reply('Command Incomplete!\nUsage: /eval your_python_code')
     old_stderr = sys.stderr
     old_stdout = sys.stdout
@@ -19,7 +19,7 @@ async def executor(client, message):
     stdout, stderr, exc = None, None, None
     try:
         await aexec(code, client, message)
-    except:
+    except Exception: # Catching a more general Exception for robustness
         exc = traceback.format_exc()
     stdout = redirected_output.getvalue()
     stderr = redirected_error.getvalue()
@@ -47,6 +47,6 @@ async def executor(client, message):
 async def aexec(code, client, message):
     exec(
         "async def __aexec(client, message): "
-        + "".join(f"\n {a}" for a in code.split("\n"))
+        + "".join(f"\n {l}" for l in code.split("\n"))
     )
     return await locals()["__aexec"](client, message)
