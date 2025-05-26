@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from pyrogram.errors import UserNotParticipant, FloodWait, RPCError
-from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM, LOG_CHANNEL # Added LOG_CHANNEL
+from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM, LOG_CHANNEL
 from imdb import Cinemagoer
 import asyncio
 from pyrogram.types import InlineKeyboardButton
@@ -251,4 +251,102 @@ async def get_verify_status(user_id):
         temp.VERIFICATIONS.pop(user_id, None)
         return {'is_verified': False}
 
-async def update_verify_status(user_id
+async def update_verify_status(user_id): # Added missing ')' here
+    temp.VERIFICATIONS[user_id] = {'is_verified': True, 'last_verified': datetime.now()}
+
+async def get_settings(chat_id):
+    chat_settings = temp.SETTINGS.get(chat_id)
+    if not chat_settings:
+        chat_settings = await db.get_chat(chat_id)
+        if not chat_settings:
+            temp.SETTINGS[chat_id] = {
+                'file_caption': None,
+                'pm_search': True,
+                'tutorial': None,
+                'max_btn': 5
+            }
+        else:
+            temp.SETTINGS[chat_id] = chat_settings.get('settings', {})
+    return temp.SETTINGS[chat_id]
+
+async def save_group_settings(chat_id, key, value):
+    stg = await get_settings(chat_id)
+    stg[key] = value
+    temp.SETTINGS[chat_id] = stg
+    await db.update_chat_sttgs(chat_id, stg)
+    return stg
+
+async def is_check_admin_in_db(user_id):
+    return False
+
+# --- Broadcast Functions ---
+
+async def broadcast_messages(client, user_ids, message_id):
+    """
+    Broadcasts a message to a list of user IDs.
+    Returns success_count, failed_count, total_count.
+    """
+    failed_count = 0
+    success_count = 0
+    total_count = len(user_ids)
+
+    for user_id in user_ids:
+        if temp.USERS_CANCEL: # Check for cancel signal
+            logger.info("User broadcast cancelled by admin.")
+            break
+        try:
+            await client.copy_message(chat_id=int(user_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
+            success_count += 1
+            await asyncio.sleep(0.1) # Small delay to avoid hitting limits too fast
+        except FloodWait as e:
+            logger.warning(f"FloodWait of {e.value} seconds encountered for user {user_id}. Sleeping...")
+            await asyncio.sleep(e.value)
+            try:
+                await client.copy_message(chat_id=int(user_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
+                success_count += 1
+            except Exception as e:
+                logger.error(f"Failed to broadcast to user {user_id} after FloodWait: {e}", exc_info=True)
+                failed_count += 1
+        except RPCError as e:
+            logger.warning(f"Failed to broadcast to user {user_id} (RPCError): {e}")
+            failed_count += 1
+        except Exception as e:
+            logger.error(f"Unexpected error broadcasting to user {user_id}: {e}", exc_info=True)
+            failed_count += 1
+
+    return success_count, failed_count, total_count
+
+async def groups_broadcast_messages(client, chat_ids, message_id):
+    """
+    Broadcasts a message to a list of group IDs.
+    Returns success_count, failed_count, total_count.
+    """
+    failed_count = 0
+    success_count = 0
+    total_count = len(chat_ids)
+
+    for chat_id in chat_ids:
+        if temp.GROUPS_CANCEL: # Check for cancel signal
+            logger.info("Group broadcast cancelled by admin.")
+            break
+        try:
+            await client.copy_message(chat_id=int(chat_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
+            success_count += 1
+            await asyncio.sleep(0.1)
+        except FloodWait as e:
+            logger.warning(f"FloodWait of {e.value} seconds encountered for group {chat_id}. Sleeping...")
+            await asyncio.sleep(e.value)
+            try:
+                await client.copy_message(chat_id=int(chat_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
+                success_count += 1
+            except Exception as e:
+                logger.error(f"Failed to broadcast to group {chat_id} after FloodWait: {e}", exc_info=True)
+                failed_count += 1
+        except RPCError as e:
+            logger.warning(f"Failed to broadcast to group {chat_id} (RPCError): {e}")
+            failed_count += 1
+        except Exception as e:
+            logger.error(f"Unexpected error broadcasting to group {chat_id}: {e}", exc_info=True)
+            failed_count += 1
+
+    return success_count, failed_count, total_count
