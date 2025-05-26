@@ -95,11 +95,11 @@ I can't find the <b>{}</b> in my database! 🥲
 ☀️ Languages: {languages}
 📀 RunTime: {runtime} Minutes
 
-🗣 Requested by: {message.from_user.mention}
-©️ Powered by: <b>{message.chat.title}</b>"""
+🗣 Requested by: {user_mention}
+©️ Powered by: <b>{chat_title}</b>""" # Changed placeholders
 
-    FILE_CAPTION = """"<b>📂Filename: {file_name}</b>\n
-<b>@Rockerz2z X @Rockerz2z</b>"""
+    FILE_CAPTION = """<b>📂Filename: {file_name}</b>\n
+<b>@Rockerz2z X @Rockerz2z</b>""" # Removed extra double quotes
 
     WELCOME_TEXT = """👋 Hello {mention}, Welcome to {title} group! 💞"""
 
