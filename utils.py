@@ -1,22 +1,16 @@
-import logging
-from datetime import datetime, timedelta
-from pyrogram.errors import UserNotParticipant, FloodWait, RPCError
-from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM, LOG_CHANNEL
+from hydrogram.errors import UserNotParticipant, FloodWait
+from info import LONG_IMDB_DESCRIPTION, ADMINS, IS_PREMIUM
 from imdb import Cinemagoer
 import asyncio
-from pyrogram.types import InlineKeyboardButton
-from pyrogram import enums
+from hydrogram.types import InlineKeyboardButton
+from hydrogram import enums
 import re
+from datetime import datetime
 from database.users_chats_db import db
 from shortzy import Shortzy
 import requests
-import aiohttp
-import aiofiles
-import os
 
-logger = logging.getLogger(__name__)
-
-imdb = Cinemagoer()
+imdb = Cinemagoer() 
 
 class temp(object):
     START_TIME = 0
@@ -49,136 +43,233 @@ async def is_subscribed(bot, query):
             btn.append(
                 [InlineKeyboardButton(f'Join : {chat.title}', url=chat.invite_link)]
             )
-    if stg and stg.get('REQUEST_FORCE_SUB_CHANNELS'):
-        chat = await bot.get_chat(int(stg.get('REQUEST_FORCE_SUB_CHANNELS')))
-        if not await db.find_join_req(query.from_user.id, chat.id):
+    if stg and stg.get('REQUEST_FORCE_SUB_CHANNELS') and not db.find_join_req(query.from_user.id):
+        id = stg.get('REQUEST_FORCE_SUB_CHANNELS')
+        chat = await bot.get_chat(int(id))
+        try:
+            await bot.get_chat_member(int(id), query.from_user.id)
+        except UserNotParticipant:
+            url = await bot.create_chat_invite_link(int(id), creates_join_request=True)
             btn.append(
-                [InlineKeyboardButton(f'Request to Join : {chat.title}', url=chat.invite_link)]
+                [InlineKeyboardButton(f'Request : {chat.title}', url=url.invite_link)]
             )
     return btn
 
-async def is_premium(user_id, client):
-    """
-    Checks if a user is premium.
-    This function should retrieve premium status from your database.
-    """
-    if user_id in ADMINS:
-        return True # Admins are always considered premium
 
-    user_data = await db.get_user(user_id)
-    if user_data and user_data.get('status', {}).get('premium'):
-        premium_info = user_data.get('status', {})
-        expiry_date = premium_info.get('expire')
-        if expiry_date and datetime.now() < expiry_date:
-            return True
-        else:
-            # Premium expired, update status in DB
-            await db.update_premium_status(user_id, False, None)
-            logger.info(f"Premium expired for user {user_id}")
-            return False
-    return False
+def upload_image(file_path):
+    with open(file_path, 'rb') as f:
+        files = {'files[]': f}
+        response = requests.post("https://uguu.se/upload", files=files)
 
-async def check_premium(client):
-    """
-    Periodically checks premium status of users.
-    """
-    while True:
-        logger.info("Running premium check task...")
-
+    if response.status_code == 200:
         try:
-            # Fix: Iterate over AsyncIOMotorCursor using async for
-            async for user_data in db.get_premium_users():
-                user_id = user_data['id']
-                premium_info = user_data.get('status', {})
-                if premium_info.get('premium'):
-                    expiry_date = premium_info.get('expire')
-                    if expiry_date and datetime.now() > expiry_date:
-                        await db.update_premium_status(user_id, False, None)
-                        logger.info(f"Premium expired for user {user_id}")
-                        try:
-                            await client.send_message(user_id, "Your premium plan has expired!")
-                        except Exception as e:
-                            logger.warning(f"Could not notify user {user_id} about premium expiry: {e}")
+            data = response.json()
+            return data['files'][0]['url'].replace('\\/', '/')
         except Exception as e:
-            logger.error(f"Error during premium check: {e}", exc_info=True)
-
-        await asyncio.sleep(6 * 3600)
-
-async def get_poster(query, bulk=False, id=False):
-    if bulk:
-        search = imdb.search_movie(query)
-        if not search:
             return None
-        return search
-    elif id:
-        search = imdb.get_movie(query)
-        return search
     else:
-        search = imdb.search_movie(query)
-        if not search:
+        return None
+
+
+async def get_poster(query, bulk=False, id=False, file=None):
+    if not id:
+        query = (query.strip()).lower()
+        title = query
+        year = re.findall(r'[1-2]\d{3}$', query, re.IGNORECASE)
+        if year:
+            year = list_to_str(year[:1])
+            title = (query.replace(year, "")).strip()
+        elif file is not None:
+            year = re.findall(r'[1-2]\d{3}', file, re.IGNORECASE)
+            if year:
+                year = list_to_str(year[:1]) 
+        else:
+            year = None
+        movieid = imdb.search_movie(title.lower(), results=10)
+        if not movieid:
             return None
-        return search[0]
+        if year:
+            filtered=list(filter(lambda k: str(k.get('year')) == str(year), movieid))
+            if not filtered:
+                filtered = movieid
+        else:
+            filtered = movieid
+        movieid=list(filter(lambda k: k.get('kind') in ['movie', 'tv series'], filtered))
+        if not movieid:
+            movieid = filtered
+        if bulk:
+            return movieid
+        movieid = movieid[0].movieID
+    else:
+        movieid = query
+    movie = imdb.get_movie(movieid)
+    if movie.get("original air date"):
+        date = movie["original air date"]
+    elif movie.get("year"):
+        date = movie.get("year")
+    else:
+        date = "N/A"
+    plot = ""
+    if not LONG_IMDB_DESCRIPTION:
+        plot = movie.get('plot')
+        if plot and len(plot) > 0:
+            plot = plot[0]
+    else:
+        plot = movie.get('plot outline')
+    if plot and len(plot) > 800:
+        plot = plot[0:800] + "..."
+    return {
+        'title': movie.get('title'),
+        'votes': movie.get('votes'),
+        "aka": list_to_str(movie.get("akas")),
+        "seasons": movie.get("number of seasons"),
+        "box_office": movie.get('box office'),
+        'localized_title': movie.get('localized title'),
+        'kind': movie.get("kind"),
+        "imdb_id": f"tt{movie.get('imdbID')}",
+        "cast": list_to_str(movie.get("cast")),
+        "runtime": list_to_str(movie.get("runtimes")),
+        "countries": list_to_str(movie.get("countries")),
+        "certificates": list_to_str(movie.get("certificates")),
+        "languages": list_to_str(movie.get("languages")),
+        "director": list_to_str(movie.get("director")),
+        "writer":list_to_str(movie.get("writer")),
+        "producer":list_to_str(movie.get("producer")),
+        "composer":list_to_str(movie.get("composer")) ,
+        "cinematographer":list_to_str(movie.get("cinematographer")),
+        "music_team": list_to_str(movie.get("music department")),
+        "distributors": list_to_str(movie.get("distributors")),
+        'release_date': date,
+        'year': movie.get('year'),
+        'genres': list_to_str(movie.get("genres")),
+        'poster': movie.get('full-size cover url'),
+        'plot': plot,
+        'rating': str(movie.get("rating")),
+        'url':f'https://www.imdb.com/title/tt{movieid}'
+    }
+
+async def is_check_admin(bot, chat_id, user_id):
+    try:
+        member = await bot.get_chat_member(chat_id, user_id)
+        return member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]
+    except:
+        return False
+
+async def get_verify_status(user_id):
+    verify = temp.VERIFICATIONS.get(user_id)
+    if not verify:
+        verify = await db.get_verify_status(user_id)
+        temp.VERIFICATIONS[user_id] = verify
+    return verify
+
+async def update_verify_status(user_id, verify_token="", is_verified=False, link="", expire_time=0):
+    current = await get_verify_status(user_id)
+    current['verify_token'] = verify_token
+    current['is_verified'] = is_verified
+    current['link'] = link
+    current['expire_time'] = expire_time
+    temp.VERIFICATIONS[user_id] = current
+    await db.update_verify_status(user_id, current)
+
+    
+async def is_premium(user_id, bot):
+    if not IS_PREMIUM:
+        return True
+    if user_id in ADMINS:
+        return True
+    mp = db.get_plan(user_id)
+    if mp['premium']:
+        if mp['expire'] < datetime.now():
+            await bot.send_message(user_id, f"Your premium {mp['plan']} plan is expired in {mp['expire'].strftime('%Y.%m.%d %H:%M:%S')}, use /plan to activate new plan again")
+            mp['expire'] = ''
+            mp['plan'] = ''
+            mp['premium'] = False
+            db.update_plan(user_id, mp)
+            return False
+        return True
+    else:
+        return False
+
+
+async def check_premium(bot):
+    while True:
+        pr = [i for i in db.get_premium_users() if i['status']['premium']]
+        for p in pr:
+            mp = p['status']
+            if mp['expire'] < datetime.now():
+                try:
+                    await bot.send_message(
+                        p['id'],
+                        f"Your premium {mp['plan']} plan is expired in {mp['expire'].strftime('%Y.%m.%d %H:%M:%S')}, use /plan to activate new plan again"
+                    )
+                except Exception:
+                    pass
+                mp['expire'] = ''
+                mp['plan'] = ''
+                mp['premium'] = False
+                db.update_plan(p['id'], mp)
+        await asyncio.sleep(1200)
+
+
+async def broadcast_messages(user_id, message, pin):
+    try:
+        m = await message.copy(chat_id=user_id)
+        if pin:
+            await m.pin(both_sides=True)
+        return "Success"
+    except FloodWait as e:
+        await asyncio.sleep(e.value)
+        return await broadcast_messages(user_id, message, pin)
+    except Exception as e:
+        await db.delete_user(int(user_id))
+        return "Error"
+
+async def groups_broadcast_messages(chat_id, message, pin):
+    try:
+        k = await message.copy(chat_id=chat_id)
+        if pin:
+            try:
+                await k.pin()
+            except:
+                pass
+        return "Success"
+    except FloodWait as e:
+        await asyncio.sleep(e.value)
+        return await groups_broadcast_messages(chat_id, message, pin)
+    except Exception as e:
+        await db.delete_chat(chat_id)
+        return "Error"
+
+async def get_settings(group_id):
+    settings = temp.SETTINGS.get(group_id)
+    if not settings:
+        settings = await db.get_settings(group_id)
+        temp.SETTINGS.update({group_id: settings})
+    return settings
+    
+async def save_group_settings(group_id, key, value):
+    current = await get_settings(group_id)
+    current.update({key: value})
+    temp.SETTINGS.update({group_id: current})
+    await db.update_settings(group_id, current)
 
 def get_size(size):
-    """Get size in readable format"""
-    if size < 1000:
-        return f"{size} B"
-    siz = '{:.2f}'.format(size / 1024)
-    if float(siz) < 1000:
-        return f"{siz} KB"
-    siz = '{:.2f}'.format(size / (1024 * 1024))
-    if float(siz) < 1000:
-        return f"{siz} MB"
-    siz = '{:.2f}'.format(size / (1024 * 1024 * 1024))
-    if float(siz) < 1000:
-        return f"{siz} GB"
+    units = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
+    size = float(size)
+    i = 0
+    while size >= 1024.0 and i < len(units):
+        i += 1
+        size /= 1024.0
+    return "%.2f %s" % (size, units[i])
 
-async def is_check_admin(client, chat_id, id):
-    try:
-        member = await client.get_chat_member(chat_id, id)
-    except UserNotParticipant:
-        return False
-    if member.status in [enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
-        return True
-    return False
-
-async def upload_image(filepath):
-    """
-    Uploads an image to uguu.se and returns the direct link.
-    """
-    UGUU_URL = "https://uguu.se/upload.php"
-
-    async with aiohttp.ClientSession() as session:
-        async with aiofiles.open(filepath, 'rb') as f:
-            data = aiohttp.FormData()
-            data.add_field('files[]', await f.read(), filename=os.path.basename(filepath), content_type='application/octet-stream')
-
-            try:
-                async with session.post(UGUU_URL, data=data) as response:
-                    if response.status == 200:
-                        response_text = await response.text()
-                        match = re.search(r'(https?://\S+\.\S+)', response_text)
-                        if match:
-                            return match.group(0)
-                        else:
-                            logger.error(f"Uguu.se upload successful but no direct link found in response: {response_text}")
-                            return None
-                    else:
-                        logger.error(f"Uguu.se upload failed with status {response.status}: {await response.text()}")
-                        return None
-            except aiohttp.ClientError as e:
-                logger.error(f"Network error during uguu.se upload: {e}", exc_info=True)
-                return None
-            except Exception as e:
-                logger.error(f"An unexpected error occurred during uguu.se upload: {e}", exc_info=True)
-                return None
-
-    try:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-    except Exception as e:
-        logger.error(f"Error removing local file {filepath}: {e}")
-
+def list_to_str(k):
+    if not k:
+        return "N/A"
+    elif len(k) == 1:
+        return str(k[0])
+    else:
+        return ', '.join(f'{elem}' for elem in k)
+    
 async def get_shortlink(url, api, link):
     shortzy = Shortzy(api_key=api, base_site=url)
     link = await shortzy.convert(link)
@@ -203,7 +294,7 @@ def get_wish():
     else:
         status = "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
     return status
-
+    
 async def get_seconds(time_string):
     def extract_value_and_unit(ts):
         value = ""
@@ -216,137 +307,18 @@ async def get_seconds(time_string):
         if value:
             value = int(value)
         return value, unit
-
-    time_string = time_string.lower().strip()
-    if not time_string:
-        return 0
-
     value, unit = extract_value_and_unit(time_string)
-
-    if not value or not unit:
-        raise ValueError("Invalid time string format")
-
-    if unit.startswith('s'):
+    if unit == 's':
         return value
-    elif unit.startswith('m'):
+    elif unit == 'min':
         return value * 60
-    elif unit.startswith('h'):
+    elif unit == 'hour':
         return value * 3600
-    elif unit.startswith('d'):
+    elif unit == 'day':
         return value * 86400
+    elif unit == 'month':
+        return value * 86400 * 30
+    elif unit == 'year':
+        return value * 86400 * 365
     else:
-        raise ValueError("Invalid time unit. Use s (seconds), m (minutes), h (hours), d (days).")
-
-async def get_verify_status(user_id):
-    user = temp.VERIFICATIONS.get(user_id)
-    if not user:
-        return {'is_verified': False}
-
-    current_time = datetime.now()
-    last_verified = user['last_verified']
-
-    if current_time - last_verified <= timedelta(days=1):
-        return {'is_verified': True, 'remaining_time': (last_verified + timedelta(days=1)) - current_time}
-    else:
-        temp.VERIFICATIONS.pop(user_id, None)
-        return {'is_verified': False}
-
-async def update_verify_status(user_id):
-    temp.VERIFICATIONS[user_id] = {'is_verified': True, 'last_verified': datetime.now()}
-
-async def get_settings(chat_id):
-    chat_settings = temp.SETTINGS.get(chat_id)
-    if not chat_settings:
-        chat_settings = await db.get_chat(chat_id)
-        if not chat_settings:
-            temp.SETTINGS[chat_id] = {
-                'file_caption': None,
-                'pm_search': True,
-                'tutorial': None,
-                'max_btn': 5
-            }
-        else:
-            temp.SETTINGS[chat_id] = chat_settings.get('settings', {})
-    return temp.SETTINGS[chat_id]
-
-async def save_group_settings(chat_id, key, value):
-    stg = await get_settings(chat_id)
-    stg[key] = value
-    temp.SETTINGS[chat_id] = stg
-    await db.update_chat_sttgs(chat_id, stg)
-    return stg
-
-async def is_check_admin_in_db(user_id):
-    return False
-
-# --- Broadcast Functions ---
-
-async def broadcast_messages(client, user_ids, message_id):
-    """
-    Broadcasts a message to a list of user IDs.
-    Returns success_count, failed_count, total_count.
-    """
-    failed_count = 0
-    success_count = 0
-    total_count = len(user_ids)
-
-    for user_id in user_ids:
-        if temp.USERS_CANCEL: # Check for cancel signal
-            logger.info("User broadcast cancelled by admin.")
-            break
-        try:
-            await client.copy_message(chat_id=int(user_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
-            success_count += 1
-            await asyncio.sleep(0.1) # Small delay to avoid hitting limits too fast
-        except FloodWait as e:
-            logger.warning(f"FloodWait of {e.value} seconds encountered for user {user_id}. Sleeping...")
-            await asyncio.sleep(e.value)
-            try:
-                await client.copy_message(chat_id=int(user_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
-                success_count += 1
-            except Exception as e:
-                logger.error(f"Failed to broadcast to user {user_id} after FloodWait: {e}", exc_info=True)
-                failed_count += 1
-        except RPCError as e:
-            logger.warning(f"Failed to broadcast to user {user_id} (RPCError): {e}")
-            failed_count += 1
-        except Exception as e:
-            logger.error(f"Unexpected error broadcasting to user {user_id}: {e}", exc_info=True)
-            failed_count += 1
-
-    return success_count, failed_count, total_count
-
-async def groups_broadcast_messages(client, chat_ids, message_id):
-    """
-    Broadcasts a message to a list of group IDs.
-    Returns success_count, failed_count, total_count.
-    """
-    failed_count = 0
-    success_count = 0
-    total_count = len(chat_ids)
-
-    for chat_id in chat_ids:
-        if temp.GROUPS_CANCEL: # Check for cancel signal
-            logger.info("Group broadcast cancelled by admin.")
-            break
-        try:
-            await client.copy_message(chat_id=int(chat_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
-            success_count += 1
-            await asyncio.sleep(0.1)
-        except FloodWait as e:
-            logger.warning(f"FloodWait of {e.value} seconds encountered for group {chat_id}. Sleeping...")
-            await asyncio.sleep(e.value)
-            try:
-                await client.copy_message(chat_id=int(chat_id), from_chat_id=LOG_CHANNEL, message_id=message_id)
-                success_count += 1
-            except Exception as e:
-                logger.error(f"Failed to broadcast to group {chat_id} after FloodWait: {e}", exc_info=True)
-                failed_count += 1
-        except RPCError as e:
-            logger.warning(f"Failed to broadcast to group {chat_id} (RPCError): {e}")
-            failed_count += 1
-        except Exception as e:
-            logger.error(f"Unexpected error broadcasting to group {chat_id}: {e}", exc_info=True)
-            failed_count += 1
-
-    return success_count, failed_count, total_count
+        return 0
