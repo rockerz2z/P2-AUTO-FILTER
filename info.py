@@ -1,7 +1,7 @@
 import re
 from os import environ
 import os
-from Script import script
+from Script import script # Make sure Script.py exists and has WELCOME_TXT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ if len(FILES_DATABASE_URL) == 0:
     exit()
 
 SECOND_FILES_DATABASE_URL = environ.get('SECOND_FILES_DATABASE_URL', '') # Optional
+DATABASE_NAME = environ.get('DATABASE_NAME', 'AutoFilterBot') # Added DATABASE_NAME
 
 # Channels and groups
 BIN_CHANNEL = environ.get('BIN_CHANNEL', '-1002047392683')
@@ -100,7 +101,6 @@ else:
 REACTIONS = [reactions for reactions in environ.get('REACTIONS', '🤝 😇 🤗 😍 👍 🎅 😐 🥰 🤩 😱 🤣 😘 👏 😛 😈 🎉 ⚡️ 🫡 🤓 😎 🏆 🔥 🤭 🌚 🆒 👻 😁').split()]  # Multiple reactions can be used separated by space
 STICKERS = [sticker for sticker in environ.get('STICKERS', 'CAACAgUAAxkBAAELTeJoJHtQsLxJJfkT4JakLxbUjcKz8wACjwIAAsnn6FVsAf5eBhi7Sh4E').split()]  # Multiple sticker can be used separated by space, use @idstickerbot for get sticker id
 
-
 # for Premium 
 IS_PREMIUM = is_enabled('IS_PREMIUM', True)
 PRE_DAY_AMOUNT = int(environ.get('PRE_DAY_AMOUNT', '10')) # add amount in INR for premium charge pre day 
@@ -109,3 +109,21 @@ UPI_QR_CODE = environ.get("UPI_QR_CODE", "https://telegra.ph/file/af5b796d11100f
 
 # About bot
 LONG_IMDB_DESCRIPTION = is_enabled('LONG_IMDB_DESCRIPTION', False)
+
+# Added missing variables from users_chats_db.py import
+IMDB_TEMPLATE = environ.get('IMDB_TEMPLATE', '')
+WELCOME_TEXT = environ.get('WELCOME_TEXT', getattr(script, 'WELCOME_TXT', '')) # Using getattr for safety
+LINK_MODE = is_enabled('LINK_MODE', True)
+TUTORIAL = environ.get('TUTORIAL', '')
+SHORTLINK_URL = environ.get('SHORTLINK_URL', '')
+SHORTLINK_API = environ.get('SHORTLINK_API', '')
+SHORTLINK = is_enabled('SHORTLINK', False)
+FILE_CAPTION = environ.get('FILE_CAPTION', '')
+IMDB = is_enabled('IMDB', True)
+WELCOME = is_enabled('WELCOME', True)
+SPELL_CHECK = is_enabled('SPELL_CHECK', True)
+PROTECT_CONTENT = is_enabled('PROTECT_CONTENT', False)
+AUTO_FILTER = is_enabled('AUTO_FILTER', True)
+AUTO_DELETE = is_enabled('AUTO_DELETE', False)
+IS_STREAM = is_enabled('IS_STREAM', True)
+VERIFY_EXPIRE = int(environ.get('VERIFY_EXPIRE', '86400'))
