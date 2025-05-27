@@ -86,7 +86,8 @@ async def check_premium(client):
         logger.info("Running premium check task...")
 
         try:
-            premium_users = await db.get_premium_users()
+            # Fix: Convert AsyncIOMotorCursor to a list
+            premium_users = await db.get_premium_users().to_list(length=None) 
             for user_data in premium_users:
                 user_id = user_data['id']
                 premium_info = user_data.get('status', {})
@@ -251,7 +252,7 @@ async def get_verify_status(user_id):
         temp.VERIFICATIONS.pop(user_id, None)
         return {'is_verified': False}
 
-async def update_verify_status(user_id): # Added missing ')' here
+async def update_verify_status(user_id):
     temp.VERIFICATIONS[user_id] = {'is_verified': True, 'last_verified': datetime.now()}
 
 async def get_settings(chat_id):
