@@ -86,9 +86,8 @@ async def check_premium(client):
         logger.info("Running premium check task...")
 
         try:
-            # Fix: Convert AsyncIOMotorCursor to a list
-            premium_users = await db.get_premium_users().to_list(length=None) 
-            for user_data in premium_users:
+            # Fix: Iterate over AsyncIOMotorCursor using async for
+            async for user_data in db.get_premium_users():
                 user_id = user_data['id']
                 premium_info = user_data.get('status', {})
                 if premium_info.get('premium'):
